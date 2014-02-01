@@ -14,8 +14,10 @@
 
 using namespace std;
 
+#undef be32toh
 #define be32toh(x)      ((u_int32_t)ntohl((u_int32_t)(x)))
 
+#undef be64toh
 static __inline__ u_int64_t be64toh(u_int64_t __x) { return (((u_int64_t)be32toh(__x & (u_int64_t)0xFFFFFFFFULL)) << 32) | ((u_int64_t)be32toh((__x & (u_int64_t)0xFFFFFFFF00000000ULL) >> 32)); }
 
 uint64_t System::load_elf(const char* filename) {
