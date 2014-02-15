@@ -8,6 +8,13 @@ module Core (
 	logic[5:0] fetch_skip;
 	logic[6:0] fetch_offset, decode_offset;
 
+	logic[3:0][4:0][7:0] opcode;
+	initial begin
+		assign opcode[0] = "MOV ";
+		assign opcode[1] = "ADD ";
+		assign opcode[2] = "CALL";
+	end
+
 	function logic mtrr_is_mmio(logic[63:0] physaddr);
 		mtrr_is_mmio = ((physaddr > 640*1024 && physaddr < 1024*1024));
 	endfunction
@@ -46,7 +53,7 @@ module Core (
 				if (fetch_skip > 0) begin
 					fetch_skip <= fetch_skip - 8;
 				end else begin
-					$display("Fetch: [%d] %08x %08x\n", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
+					$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
 					decode_buffer[fetch_offset*8 +: 64] <= bus.resp;
 					//$display("fill at %d: %x [%x]", fetch_offset, bus.resp, decode_buffer);
 					fetch_offset <= fetch_offset + 8;
