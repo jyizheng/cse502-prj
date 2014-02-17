@@ -23,7 +23,18 @@ typedef struct packed {
 	logic escape1;
 	logic escape2;
 	logic modrm;
+	logic sib;
 } opcode_t;
+
+typedef struct packed {
+	logic[31:0] value;
+	logic[2:0] size;
+} disp_t;
+
+typedef struct packed {
+	logic[31:0] value;
+	logic[2:0] size;
+} imme_t;
 
 module Core (
 	input[63:0] entry
@@ -99,7 +110,7 @@ module Core (
 	endfunction
 
 	function logic opcode_has_modrm(logic[7:0] opcode);
-		logic[255:0] onebyte_has_modrm = {
+		logic[0:255] onebyte_has_modrm = {
 			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
 			/*       -------------------------------        */
 			/* 00 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0, /* 00 */
@@ -128,15 +139,16 @@ module Core (
 	always_comb begin
 		if (can_decode) begin : decode_block
 			rex_t rex = 4'b0000;
+			opcode_t opcode = 0;
 			modrm_t modrm = 8'h00;
 			sib_t sib = 8'h00;
-			opcode_t opcode = 0;
+			disp_t disp = 0;
+			imme_t imme = 0;
+
 			logic[7:0] next_byte;
 
-			//logic[255:0][1:0] opcodes;
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
-			//logic[255:0] test_code;
 			bytes_decoded_this_cycle = 0;
 			error_code = ec_none;
 
@@ -155,9 +167,9 @@ module Core (
 					break;
 				bytes_decoded_this_cycle += 1;
 			end
-			$display("REX: %x", rex);
 
 			/* Opcode */
+			$display("next_byte [%x]", next_byte);
 			assert(next_byte != 8'h0F)
 			else
 				$fatal("Escape not supported");
@@ -165,27 +177,52 @@ module Core (
 				default: begin
 					opcode.opcode = next_byte;
 					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 					opcode.modrm = opcode_has_modrm(opcode.opcode);
 				end
 			endcase
 
-			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-
-
 			if (error_code != ec_none)
 				$finish;
 
-			/* ModR/M / SIB */
+			/* ModR/M */
 			if (opcode.modrm == 1) begin
 				modrm = next_byte;
 				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
-			
-			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 
+			/* SIB */
+			if (modrm.mod != 2'b11 && modrm.rm == 3'b100) begin
+				opcode.sib = 1'b1;
+				sib = next_byte;
+				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+			end
+
+			/* Displacement */
+			if (modrm.mod == 2'b01)
+				disp.size = 1;
+			else if (modrm.mod == 2'b10)
+				disp.size = 4;
+			else if (modrm.mod == 2'b00 && modrm.rm == 3'b101)
+				disp.size = 4;
+
+			for (logic[2:0] i = 0; i < disp.size; i += 1) begin
+				disp.value[{2'b00,i}*8 +: 8] = next_byte;
+				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+			end
+
+
+			$display("Length: %d", bytes_decoded_this_cycle);
+			$display("REX: %x[%b]", rex, rex);
 			$display("Opcode: %x[%b]", opcode, opcode);
 			$display("ModRM: %x[%b]", modrm, modrm);
 			$display("SIB: %x[%b]", sib, sib);
+			$display("DISP: %x[%b]", disp, disp);
+			$display("IMME: %x[%b]", imme, imme);
+			$finish;
 
 			// cse502 : following is an example of how to finish the simulation
 			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
