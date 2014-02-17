@@ -19,9 +19,9 @@ typedef struct packed {
 } sib_t;
 
 typedef struct packed {
+	logic[7:0] opcode;
 	logic escape1;
 	logic escape2;
-	logic[7:0] opcode;
 	logic modrm;
 } opcode_t;
 
@@ -98,6 +98,32 @@ module Core (
 		opcode_inside = (value >= low && value <= high);
 	endfunction
 
+	function logic opcode_has_modrm(logic[7:0] opcode);
+		logic[255:0] onebyte_has_modrm = {
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+			/*       -------------------------------        */
+			/* 00 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0, /* 00 */
+			/* 10 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0, /* 10 */
+			/* 20 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0, /* 20 */
+			/* 30 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0, /* 30 */
+			/* 40 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* 40 */
+			/* 50 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* 50 */
+			/* 60 */ 1'b0,1'b0,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b0,1'b1,1'b0,1'b0,1'b0,1'b0, /* 60 */
+			/* 70 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* 70 */
+			/* 80 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 80 */
+			/* 90 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* 90 */
+			/* a0 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* a0 */
+			/* b0 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* b0 */
+			/* c0 */ 1'b1,1'b1,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* c0 */
+			/* d0 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* d0 */
+			/* e0 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* e0 */
+			/* f0 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b1  /* f0 */
+			/*       -------------------------------        */
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+		};
+		opcode_has_modrm = onebyte_has_modrm[opcode];
+	endfunction
+
 	logic[3:0] bytes_decoded_this_cycle;
 	always_comb begin
 		if (can_decode) begin : decode_block
@@ -110,6 +136,7 @@ module Core (
 			//logic[255:0][1:0] opcodes;
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
+			//logic[255:0] test_code;
 			bytes_decoded_this_cycle = 0;
 			error_code = ec_none;
 
@@ -135,17 +162,27 @@ module Core (
 			else
 				$fatal("Escape not supported");
 			casez (next_byte)
-				8'h31:
+				default: begin
+					opcode.opcode = next_byte;
 					bytes_decoded_this_cycle += 1;
-				default:
-					error_code = ec_invalid_op;
+					opcode.modrm = opcode_has_modrm(opcode.opcode);
+				end
 			endcase
+
+			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+
 
 			if (error_code != ec_none)
 				$finish;
 
 			/* ModR/M / SIB */
+			if (opcode.modrm == 1) begin
+				modrm = next_byte;
+				bytes_decoded_this_cycle += 1;
+			end
 			
+			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+
 			$display("Opcode: %x[%b]", opcode, opcode);
 			$display("ModRM: %x[%b]", modrm, modrm);
 			$display("SIB: %x[%b]", sib, sib);
