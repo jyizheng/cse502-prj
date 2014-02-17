@@ -1,19 +1,40 @@
+/* Typedefs */
+typedef struct packed {
+	logic B;
+	logic X;
+	logic R;
+	logic W;
+} rex_t;
+
+typedef struct packed {
+	logic[1:0] mod;
+	logic[2:0] reg_op;
+	logic[2:0] rm;
+} modrm_t;
+
+typedef struct packed {
+	logic [1:0] scale;
+	logic[2:0] index;
+	logic[2:0] base;
+} sib_t;
+
+typedef struct packed {
+	logic escape1;
+	logic escape2;
+	logic[7:0] opcode;
+	logic modrm;
+} opcode_t;
+
 module Core (
 	input[63:0] entry
 ,	/* verilator lint_off UNDRIVEN */ /* verilator lint_off UNUSED */ Sysbus bus /* verilator lint_on UNUSED */ /* verilator lint_on UNDRIVEN */
 );
 	enum { fetch_idle, fetch_waiting, fetch_active } fetch_state;
+	enum { ec_none, ec_invalid_op, ec_rex } error_code;
 	logic[63:0] fetch_rip;
 	logic[0:2*64*8-1] decode_buffer; // NOTE: buffer bits are left-to-right in increasing order
 	logic[5:0] fetch_skip;
 	logic[6:0] fetch_offset, decode_offset;
-
-	logic[3:0][4:0][7:0] opcode;
-	initial begin
-		assign opcode[0] = "MOV ";
-		assign opcode[1] = "ADD ";
-		assign opcode[2] = "CALL";
-	end
 
 	function logic mtrr_is_mmio(logic[63:0] physaddr);
 		mtrr_is_mmio = ((physaddr > 640*1024 && physaddr < 1024*1024));
@@ -80,9 +101,54 @@ module Core (
 	logic[3:0] bytes_decoded_this_cycle;
 	always_comb begin
 		if (can_decode) begin : decode_block
+			rex_t rex = 4'b0000;
+			modrm_t modrm = 8'h00;
+			sib_t sib = 8'h00;
+			opcode_t opcode = 0;
+			logic[7:0] next_byte;
+
+			//logic[255:0][1:0] opcodes;
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
-			if (decode_bytes == 0) ;
+			bytes_decoded_this_cycle = 0;
+			error_code = ec_none;
+
+			$display("decode_bytes [%x]", decode_bytes);
+			/* Prefix */
+			while (1) begin
+				logic stage_finished = 0;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+				$display("next_byte [%x]", next_byte);
+				casez (next_byte)
+					8'h4?: rex = next_byte[3:0];
+					default: stage_finished = 1;
+				endcase
+
+				if (stage_finished == 1)
+					break;
+				bytes_decoded_this_cycle += 1;
+			end
+			$display("REX: %x", rex);
+
+			/* Opcode */
+			assert(next_byte != 8'h0F)
+			else
+				$fatal("Escape not supported");
+			casez (next_byte)
+				8'h31:
+					bytes_decoded_this_cycle += 1;
+				default:
+					error_code = ec_invalid_op;
+			endcase
+
+			if (error_code != ec_none)
+				$finish;
+
+			/* ModR/M / SIB */
+			
+			$display("Opcode: %x[%b]", opcode, opcode);
+			$display("ModRM: %x[%b]", modrm, modrm);
+			$display("SIB: %x[%b]", sib, sib);
 
 			// cse502 : following is an example of how to finish the simulation
 			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;

@@ -22,9 +22,8 @@ print("initial begin")
 idx = 0
 fp = open('instr_list.txt')
 for line in fp:
-    print("\tassign opcode[{0}] = \"{1:{width}}\"".format(idx, line.strip(), width=instr_max))
+    print("\tassign opcode[{0}] = \"{1:{width}}\";".format(idx, line.strip(), width=instr_max))
     idx = idx+1
 
 print("end")
-
 
