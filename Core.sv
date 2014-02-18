@@ -1,5 +1,9 @@
 /* Typedefs */
 typedef struct packed {
+	logic[3:0][7:0] grp;
+} gene_pref_t;
+
+typedef struct packed {
 	logic B;
 	logic X;
 	logic R;
@@ -239,6 +243,7 @@ module Core (
 	logic[3:0] bytes_decoded_this_cycle;
 	always_comb begin
 		if (can_decode) begin : decode_block
+			gene_pref_t prefix = 32'h0000_0000;
 			rex_t rex = 4'b0000;
 			opcode_t opcode = 0;
 			modrm_t modrm = 9'h00;
@@ -251,15 +256,30 @@ module Core (
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
 			bytes_decoded_this_cycle = 0;
+			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			error_code = ec_none;
 
 			$display("decode_bytes [%x]", decode_bytes);
 			/* Prefix */
 			while (1) begin
 				logic stage_finished = 0;
-				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 				$display("next_byte [%x]", next_byte);
 				casez (next_byte)
+					/* Group 1 */
+					8'hF0: prefix.grp[0] = next_byte;
+					8'hF2: prefix.grp[0] = next_byte;
+					8'hF3: prefix.grp[0] = next_byte;
+					/* Group 2 */
+					8'h26: prefix.grp[1] = next_byte;
+					8'h2E: prefix.grp[1] = next_byte;
+					8'h36: prefix.grp[1] = next_byte;
+					8'h3E: prefix.grp[1] = next_byte;
+					8'h64: prefix.grp[1] = next_byte;
+					8'h65: prefix.grp[1] = next_byte;
+					/* Group 3 */
+					8'h66: prefix.grp[2] = next_byte;
+					/* Group 4 */
+					8'h67: prefix.grp[3] = next_byte;
 					/* REX */
 					8'h4?: rex = next_byte[3:0];
 					default: stage_finished = 1;
@@ -268,6 +288,7 @@ module Core (
 				if (stage_finished == 1)
 					break;
 				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
 			/* Opcode */
@@ -343,6 +364,7 @@ module Core (
 			end
 
 			$display("Length: %d", bytes_decoded_this_cycle);
+			$display("Prefix: %d[%b]", prefix, prefix);
 			$display("REX: %x[%b]", rex, rex);
 			$display("Opcode: %x[%b]", opcode, opcode);
 			$display("ModRM: %x[%b]", modrm, modrm);
