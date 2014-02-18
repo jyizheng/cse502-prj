@@ -240,7 +240,9 @@ module Core (
 		endcase
 	endfunction
 
-	function logic decode_one();
+	function logic decode_one(gene_pref_t prefix, rex_t rex,
+		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
+		$display("%x %x %x %x %x %x %x", prefix, rex, opcode, modrm, sib, disp, imme);
 		decode_one = 0;
 	endfunction
 
@@ -366,16 +368,21 @@ module Core (
 			end
 
 			/* decoding */
+			decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
 
 			/* finish decode cycle */
-			$display("Length: %d", bytes_decoded_this_cycle);
-			$display("Prefix: %d[%b]", prefix, prefix);
-			$display("REX: %x[%b]", rex, rex);
-			$display("Opcode: %x[%b]", opcode, opcode);
-			$display("ModRM: %x[%b]", modrm, modrm);
-			$display("SIB: %x[%b]", sib, sib);
-			$display("DISP: %x[%b]", disp, disp);
-			$display("IMME: %x[%b]", imme, imme);
+			$write("%d:", bytes_decoded_this_cycle);
+			for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
+				$write(" %x", decode_bytes[i * 8 +: 8]);
+			end
+			$write("\n");
+			//$display("Prefix: %d[%b]", prefix, prefix);
+			//$display("REX: %x[%b]", rex, rex);
+			//$display("Opcode: %x[%b]", opcode, opcode);
+			//$display("ModRM: %x[%b]", modrm, modrm);
+			//$display("SIB: %x[%b]", sib, sib);
+			//$display("DISP: %x[%b]", disp, disp);
+			//$display("IMME: %x[%b]", imme, imme);
 
 			// cse502 : following is an example of how to finish the simulation
 			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
