@@ -120,7 +120,7 @@ module Core (
 		opcode_inside = (value >= low && value <= high);
 	endfunction
 
-	function logic[2:0] opcode_imme_size(logic[7:0] opcode);
+	function logic[2:0] opcode_imme_size(opcode_t opcode);
 		logic[0:255][2:0] onebyte_has_imme = {
 			/*       f    e    d    c    b    a    9    8    7    6    5    4    3    2    1    0        */
 			/*       -------------------------------        */
@@ -143,8 +143,36 @@ module Core (
 			/*       -------------------------------        */
 			/*       f    e    d    c    b    a    9    8    7    6    5    4    3    2    1    0        */
 		};
-
-		opcode_imme_size = onebyte_has_imme[opcode];
+		logic[0:255][2:0] twobyte_has_imme = {
+			/*       f    e    d    c    b    a    9    8    7    6    5    4    3    2    1    0        */
+			/*       -------------------------------        */
+			/* f0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* f0 */
+			/* e0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* e0 */
+			/* d0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* d0 */
+			/* c0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* c0 */
+			/* b0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* b0 */
+			/* a0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* a0 */
+			/* 90 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 90 */
+			/* 80 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 80 */
+			/* 70 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1, /* 70 */
+			/* 60 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 60 */
+			/* 50 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 50 */
+			/* 40 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 40 */
+			/* 30 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 30 */
+			/* 20 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 20 */
+			/* 10 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 10 */
+			/* 00 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0  /* 00 */
+			/*       -------------------------------        */
+			/*       f    e    d    c    b    a    9    8    7    6    5    4    3    2    1    0        */
+		};
+		casez (opcode.escape)
+			2'b00:
+				opcode_imme_size = onebyte_has_imme[opcode];
+			2'b01:
+				opcode_imme_size = twobyte_has_imme[opcode];
+			2'b1?:
+				opcode_imme_size = 0;
+		endcase
 	endfunction
 
 	function logic opcode_has_modrm(opcode_t opcode);
@@ -297,7 +325,7 @@ module Core (
 			end
 
 			/* Immediate */
-			imme.size[2:0] = opcode_imme_size(opcode.opcode);
+			imme.size[2:0] = opcode_imme_size(opcode);
 			if (imme.size == 5) begin
 				imme.size = (rex.W == 1) ? 8 : 4;
 			end
