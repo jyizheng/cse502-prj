@@ -20,8 +20,7 @@ typedef struct packed {
 
 typedef struct packed {
 	logic[7:0] opcode;
-	logic escape1;
-	logic escape2;
+	logic[1:0] escape;
 	logic modrm;
 	logic sib;
 } opcode_t;
@@ -32,8 +31,8 @@ typedef struct packed {
 } disp_t;
 
 typedef struct packed {
-	logic[31:0] value;
-	logic[2:0] size;
+	logic[63:0] value;
+	logic[3:0] size;
 } imme_t;
 
 module Core (
@@ -109,6 +108,63 @@ module Core (
 		opcode_inside = (value >= low && value <= high);
 	endfunction
 
+	function logic[2:0] opcode_imme_size(logic[7:0] opcode);
+		logic[0:255][2:0] onebyte_has_imme = {
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+			/*       -------------------------------        */
+			/* 00 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 00 */
+			/* 10 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 10 */
+			/* 20 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 20 */
+			/* 30 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 30 */
+			/* 40 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 40 */
+			/* 50 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 50 */
+			/* 60 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h4,3'h4,3'h1,3'h1,3'h0,3'h0,3'h0,3'h0, /* 60 */
+			/* 70 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 70 */
+			/* 80 */ 3'h1,3'h4,3'h1,3'h1,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 80 */
+			/* 90 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 90 */
+			/* a0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* a0 */
+			/* b0 */ 3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5, /* b0 */
+			/* c0 */ 3'h1,3'h1,3'h2,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h2,3'h0,3'h0,3'h0,3'h1,3'h0,3'h0, /* c0 */
+			/* d0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* d0 */
+			/* e0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* e0 */
+			/* f0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0  /* f0 */
+			/*       -------------------------------        */
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+		};
+		logic[255:0][2:0] test_array = {
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+			/*       -------------------------------        */
+			/* 00 */ 3'h1,3'h2,3'h3,3'h4,3'h5,3'h6,3'h7,3'h6,3'h5,3'h4,3'h3,3'h2,3'h1,3'h4,3'h0,3'h0, /* 00 */
+			/* 10 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 10 */
+			/* 20 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 20 */
+			/* 30 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0, /* 30 */
+			/* 40 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 40 */
+			/* 50 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 50 */
+			/* 60 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h4,3'h4,3'h1,3'h1,3'h0,3'h0,3'h0,3'h0, /* 60 */
+			/* 70 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 70 */
+			/* 80 */ 3'h1,3'h4,3'h1,3'h1,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 80 */
+			/* 90 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 90 */
+			/* a0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* a0 */
+			/* b0 */ 3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5, /* b0 */
+			/* c0 */ 3'h1,3'h1,3'h2,3'h0,3'h0,3'h0,3'h1,3'h4,3'h0,3'h2,3'h0,3'h0,3'h0,3'h1,3'h0,3'h0, /* c0 */
+			/* d0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* d0 */
+			/* e0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* e0 */
+			/* f0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0  /* f0 */
+			/*       -------------------------------        */
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+		};
+		const logic[2:0] test_array1[0:3] = '{ 3'h1, 3'h2, 3'h3, 3'h4 };
+
+		for (logic[2:0] i = 0; i < 4; i += 1)
+			$display("TEST1 %x %x", i, test_array1[i[1:0]]);
+
+		for (logic[8:0] i = 0; i < 256; i += 1)
+			$display("TEST %x %x", i, test_array[i]);
+
+		$display("DEBUG %x:%x", opcode, onebyte_has_imme[opcode]);
+		opcode_imme_size = onebyte_has_imme[opcode];
+	endfunction
+
 	function logic opcode_has_modrm(logic[7:0] opcode);
 		logic[0:255] onebyte_has_modrm = {
 			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
@@ -174,6 +230,8 @@ module Core (
 			else
 				$fatal("Escape not supported");
 			casez (next_byte)
+				/* TODO: two/three bytes opcode */
+				/* TODO: unsupported opcode */
 				default: begin
 					opcode.opcode = next_byte;
 					bytes_decoded_this_cycle += 1;
@@ -214,6 +272,17 @@ module Core (
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
+			/* Immediate */
+			imme.size[2:0] = opcode_imme_size(opcode.opcode);
+			if (imme.size == 5) begin
+				imme.size = (rex.W == 1) ? 8 : 4;
+			end
+
+			for (logic[3:0] i = 0; i < imme.size; i += 1) begin
+				imme.value[{2'b00,i}*8 +: 8] = next_byte;
+				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+			end
 
 			$display("Length: %d", bytes_decoded_this_cycle);
 			$display("REX: %x[%b]", rex, rex);
@@ -222,7 +291,6 @@ module Core (
 			$display("SIB: %x[%b]", sib, sib);
 			$display("DISP: %x[%b]", disp, disp);
 			$display("IMME: %x[%b]", imme, imme);
-			$finish;
 
 			// cse502 : following is an example of how to finish the simulation
 			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
