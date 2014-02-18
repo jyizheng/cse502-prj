@@ -4,10 +4,10 @@ typedef struct packed {
 } gene_pref_t;
 
 typedef struct packed {
-	logic B;
-	logic X;
-	logic R;
 	logic W;
+	logic R;
+	logic X;
+	logic B;
 } rex_t;
 
 typedef struct packed {
@@ -106,7 +106,7 @@ module Core (
 				if (fetch_skip > 0) begin
 					fetch_skip <= fetch_skip - 8;
 				end else begin
-					$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
+					//$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
 					decode_buffer[fetch_offset*8 +: 64] <= bus.resp;
 					//$display("fill at %d: %x [%x]", fetch_offset, bus.resp, decode_buffer);
 					fetch_offset <= fetch_offset + 8;
@@ -135,9 +135,9 @@ module Core (
 			/*       f    e    d    c    b    a    9    8    7    6    5    4    3    2    1    0        */
 			/*       -------------------------------        */
 			/* f0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* f0 */
-			/* e0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1, /* e0 */
+			/* e0 */ 3'h0,3'h0,3'h0,3'h0,3'h1,3'h0,3'h4,3'h4,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1, /* e0 */
 			/* d0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* d0 */
-			/* c0 */ 3'h0,3'h0,3'h1,3'h0,3'h0,3'h0,3'h2,3'h0,3'h4,3'h1,3'h0,3'h0,3'h0,3'h2,3'h1,3'h1, /* c0 */
+			/* c0 */ 3'h0,3'h0,3'h1,3'h0,3'h0,3'h0,3'h3,3'h0,3'h4,3'h1,3'h0,3'h0,3'h0,3'h2,3'h1,3'h1, /* c0 */
 			/* b0 */ 3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h5,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1,3'h1, /* b0 */
 			/* a0 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h4,3'h1,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* a0 */
 			/* 90 */ 3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0,3'h0, /* 90 */
@@ -177,9 +177,9 @@ module Core (
 		};
 		casez (opcode.escape)
 			2'b00:
-				opcode_imme_size = onebyte_has_imme[opcode];
+				opcode_imme_size = onebyte_has_imme[opcode.opcode];
 			2'b01:
-				opcode_imme_size = twobyte_has_imme[opcode];
+				opcode_imme_size = twobyte_has_imme[opcode.opcode];
 			2'b1?:
 				opcode_imme_size = 0;
 		endcase
@@ -240,6 +240,10 @@ module Core (
 		endcase
 	endfunction
 
+	function logic decode_one();
+		decode_one = 0;
+	endfunction
+
 	logic[3:0] bytes_decoded_this_cycle;
 	always_comb begin
 		if (can_decode) begin : decode_block
@@ -255,15 +259,14 @@ module Core (
 
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
+			$display("decode_bytes [%x]", decode_bytes);
 			bytes_decoded_this_cycle = 0;
 			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			error_code = ec_none;
 
-			$display("decode_bytes [%x]", decode_bytes);
 			/* Prefix */
 			while (1) begin
 				logic stage_finished = 0;
-				$display("next_byte [%x]", next_byte);
 				casez (next_byte)
 					/* Group 1 */
 					8'hF0: prefix.grp[0] = next_byte;
@@ -292,7 +295,6 @@ module Core (
 			end
 
 			/* Opcode */
-			$display("next_byte [%x]", next_byte);
 			if (next_byte == 8'h0F) begin
 				bytes_decoded_this_cycle += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
@@ -353,7 +355,7 @@ module Core (
 
 			/* Immediate */
 			imme.size[2:0] = opcode_imme_size(opcode);
-			if (imme.size == 5) begin
+			if (imme.size[2:0] == 5) begin
 				imme.size = (rex.W == 1) ? 8 : 4;
 			end
 
@@ -363,6 +365,9 @@ module Core (
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
+			/* decoding */
+
+			/* finish decode cycle */
 			$display("Length: %d", bytes_decoded_this_cycle);
 			$display("Prefix: %d[%b]", prefix, prefix);
 			$display("REX: %x[%b]", rex, rex);
