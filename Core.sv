@@ -10,19 +10,31 @@ typedef struct packed {
 	logic[1:0] mod;
 	logic[2:0] reg_op;
 	logic[2:0] rm;
+} _modrm_t;
+
+typedef struct packed {
+	logic exist;
+	_modrm_t v;
 } modrm_t;
 
 typedef struct packed {
 	logic [1:0] scale;
 	logic[2:0] index;
 	logic[2:0] base;
+} _sib_t;
+
+typedef struct packed {
+	logic exist;
+	_sib_t v;
 } sib_t;
 
 typedef struct packed {
-	logic[7:0] opcode;
 	logic[1:0] escape;
-	logic modrm;
-	logic sib;
+	logic[7:0] opcode;
+	/* 2'b00: no escape;
+	 * 2'b01: 0F escape;
+	 * 2'b10: 0F 38 escape
+	 * 2'b11: 0F 3A escape */
 } opcode_t;
 
 typedef struct packed {
@@ -135,7 +147,7 @@ module Core (
 		opcode_imme_size = onebyte_has_imme[opcode];
 	endfunction
 
-	function logic opcode_has_modrm(logic[7:0] opcode);
+	function logic opcode_has_modrm(opcode_t opcode);
 		logic[0:255] onebyte_has_modrm = {
 			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
 			/*       -------------------------------        */
@@ -158,7 +170,36 @@ module Core (
 			/*       -------------------------------        */
 			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
 		};
-		opcode_has_modrm = onebyte_has_modrm[opcode];
+		logic[0:255] twobyte_has_modrm = {
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+			/*       -------------------------------        */
+			/* 00 */ 1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b0,1'b1, /* 0f */
+			/* 10 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 1f */
+			/* 20 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 2f */
+			/* 30 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b0,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0, /* 3f */
+			/* 40 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 4f */
+			/* 50 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 5f */
+			/* 60 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 6f */
+			/* 70 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 7f */
+			/* 80 */ 1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* 8f */
+			/* 90 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* 9f */
+			/* a0 */ 1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1, /* af */
+			/* b0 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* bf */
+			/* c0 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0,1'b0, /* cf */
+			/* d0 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* df */
+			/* e0 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1, /* ef */
+			/* f0 */ 1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b1,1'b0  /* ff */
+			/*       -------------------------------        */
+			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
+		};
+		casez (opcode.escape)
+			2'b00:
+				opcode_has_modrm = onebyte_has_modrm[opcode.opcode];
+			2'b01:
+				opcode_has_modrm = twobyte_has_modrm[opcode.opcode];
+			2'b1?:
+				opcode_has_modrm = 0;
+		endcase
 	endfunction
 
 	logic[3:0] bytes_decoded_this_cycle;
@@ -166,8 +207,8 @@ module Core (
 		if (can_decode) begin : decode_block
 			rex_t rex = 4'b0000;
 			opcode_t opcode = 0;
-			modrm_t modrm = 8'h00;
-			sib_t sib = 8'h00;
+			modrm_t modrm = 9'h00;
+			sib_t sib = 9'h00;
 			disp_t disp = 0;
 			imme_t imme = 0;
 
@@ -185,6 +226,7 @@ module Core (
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 				$display("next_byte [%x]", next_byte);
 				casez (next_byte)
+					/* REX */
 					8'h4?: rex = next_byte[3:0];
 					default: stage_finished = 1;
 				endcase
@@ -196,44 +238,56 @@ module Core (
 
 			/* Opcode */
 			$display("next_byte [%x]", next_byte);
-			assert(next_byte != 8'h0F)
-			else
-				$fatal("Escape not supported");
-			casez (next_byte)
-				/* TODO: two/three bytes opcode */
-				/* TODO: unsupported opcode */
-				default: begin
-					opcode.opcode = next_byte;
+			if (next_byte == 8'h0F) begin
+				bytes_decoded_this_cycle += 1;
+				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+
+				/* 0F 38 escape */
+				if (next_byte == 8'h38) begin
+					opcode.escape = 2'h10;
 					bytes_decoded_this_cycle += 1;
 					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-					opcode.modrm = opcode_has_modrm(opcode.opcode);
 				end
-			endcase
+				/* 0F 3A escape */
+				else if (next_byte == 8'h3A) begin
+					opcode.escape = 2'h11;
+					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+				end
+				/* 0F escape */
+				else
+					opcode.escape = 2'h01;
+			end
+			/* TODO: unsupported opcode */
+			opcode.opcode = next_byte;
+			bytes_decoded_this_cycle += 1;
+			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+			modrm.exist = opcode_has_modrm(opcode);
 
 			if (error_code != ec_none)
 				$finish;
 
 			/* ModR/M */
-			if (opcode.modrm == 1) begin
-				modrm = next_byte;
+			if (modrm.exist == 1) begin
+				modrm.v = next_byte;
 				bytes_decoded_this_cycle += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
 			/* SIB */
-			if (modrm.mod != 2'b11 && modrm.rm == 3'b100) begin
-				opcode.sib = 1'b1;
-				sib = next_byte;
+			if (modrm.v.mod != 2'b11 && modrm.v.rm == 3'b100) begin
+				sib.exist = 1'b1;
+				sib[7:0] = next_byte;
 				bytes_decoded_this_cycle += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
 			/* Displacement */
-			if (modrm.mod == 2'b01)
+			if (modrm.v.mod == 2'b01)
 				disp.size = 1;
-			else if (modrm.mod == 2'b10)
+			else if (modrm.v.mod == 2'b10)
 				disp.size = 4;
-			else if (modrm.mod == 2'b00 && modrm.rm == 3'b101)
+			else if (modrm.v.mod == 2'b00 && modrm.v.rm == 3'b101)
 				disp.size = 4;
 
 			for (logic[2:0] i = 0; i < disp.size; i += 1) begin
