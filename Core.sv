@@ -1,3 +1,6 @@
+/* Defines */
+`define DECODER_OUTPUT
+
 /* Typedefs */
 typedef struct packed {
 	logic[3:0][7:0] grp;
@@ -38,6 +41,7 @@ typedef struct packed {
 	logic L;
 } _opcode_t;
 
+/* escape must be the MSB */
 typedef struct packed {
 	logic[1:0] escape;
 	_opcode_t opcode;
@@ -240,11 +244,122 @@ module Core (
 		endcase
 	endfunction
 
+`ifdef DECODER_OUTPUT
+	/* verilator lint_off UNUSED */
+	function logic decode_modrm_opcode_output(opcode_t opcode, modrm_t modrm);
+		assert(modrm.exist == 1)
+		else $error("Expecting ModRM for opcode %x", opcode);
+		casez (opcode)
+			/* Group 1: 80 - 83 */
+			10'b00_1000_00??:
+				case (modrm.v.reg_op)
+					3'b000: $write(" add");
+					3'b001: $write(" or");
+					3'b010: $write(" adc");
+					3'b011: $write(" sbb");
+					3'b100: $write(" and");
+					3'b101: $write(" sub");
+					3'b110: $write(" xor");
+					3'b111: $write(" cmp");
+				endcase
+			/* Group 2: C0 - C1, D0 - D3 */
+			10'h0C1:
+				case (modrm.v.reg_op)
+					3'b000: $write(" rol");
+					3'b001: $write(" ror");
+					3'b010: $write(" rcl");
+					3'b011: $write(" rcr");
+					3'b100: $write(" shl/sal");
+					3'b101: $write(" shr");
+					3'b110: $write(" Invalid ModRM opcode extension for %x", opcode);
+					3'b111: $write(" sar");
+				endcase
+			/* Group 5: FF */
+			10'h0FF:
+				case (modrm.v.reg_op)
+					3'b000: $write(" inc");
+					3'b001: $write(" dec");
+					3'b010: $write(" NEAR call");
+					3'b011: $write(" FAR call");
+					3'b100: $write(" NEAR jmp");
+					3'b101: $write(" FAR jmp");
+					3'b110: $write(" push");
+					3'b111: $write(" Invalid ModRM opcode extension for %x", opcode);
+				endcase
+			default: $write(" Invalid ModRM opcode extension for %x", opcode);
+		endcase
+		decode_modrm_opcode_output = 0;
+	endfunction
+
+	function logic decode_output(gene_pref_t prefix, rex_t rex,
+		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
+		decode_output = 1;
+
+		/* Opcode */
+		casez (opcode)
+			/* one-byte opcodes */
+			/* 00 - 07 */
+			10'b00_0000_0???: $write(" add");
+			/* 20 - 27 */
+			10'b00_0010_0???: $write(" and");
+			/* 28 - 2D */
+			10'b00_0010_1???: $write(" sub");
+			/* 30 - 37 */
+			10'b00_0011_0???: $write(" xor");
+			/* 38 - 3D */
+			10'b00_0011_1???: $write(" cmp");
+			/* 50 - 57 */
+			10'b00_0101_0???: $write(" push");
+			/* 58 - 5f */
+			10'b00_0101_1???: $write(" pop");
+			10'h06C: $write(" insb/ins");
+			10'h06F: $write(" outs/outsw/outsd");
+			10'h07?: $write(" jcc");
+			/* 84 - 85 */
+			10'b00_1000_010?: $write(" test");
+			10'h089: $write(" xor");
+			10'h08B: $write(" mov");
+			10'h08D: $write(" lea");
+			10'h090: $write(" nop");
+			10'h0B?: $write(" mov");
+			10'h0C3: $write(" NEAR ret");
+			10'h0E8: $write(" NEAR call");
+			10'h0E9: $write(" NEAR jmp");
+			10'h0EB: $write(" SHORT jmp");
+
+			/* two-byte opcodes */
+			10'h105: $write(" syscall");
+			10'h11f: $write(" nop");
+			10'h18?: $write(" jcc");
+			10'h1af: $write(" imul");
+
+			/* --- Special group w/ ModR/M opcode --- */
+			/* Group 1 */
+			10'h081: decode_modrm_opcode_output(opcode, modrm);
+			10'h083: decode_modrm_opcode_output(opcode, modrm);
+			/* Group 2 */
+			10'h0C1: decode_modrm_opcode_output(opcode, modrm);
+			/* Group 5 */
+			10'h0FF: decode_modrm_opcode_output(opcode, modrm);
+			/* Group 11, XXX assume we only use mov of them */
+			10'h0C6: $write(" mov");
+			10'h0C7: $write(" mov");
+			default: $write("Unknown opcode[%x]", opcode);
+		endcase
+		$write("\n");
+	endfunction
+	/* verilator lint_on UNUSED */
+`endif
+
+	/* FIXME: remove this */
+	/* verilator lint_off UNUSED */
 	function logic decode_one(gene_pref_t prefix, rex_t rex,
 		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
-		$display("%x %x %x %x %x %x %x", prefix, rex, opcode, modrm, sib, disp, imme);
+		//$display("%x %x %x %x %x %x %x", prefix, rex, opcode, modrm, sib, disp, imme);
 		decode_one = 0;
+
 	endfunction
+	/* verilator lint_on UNUSED */
 
 	logic[3:0] bytes_decoded_this_cycle;
 	always_comb begin
@@ -261,7 +376,7 @@ module Core (
 
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
-			$display("decode_bytes [%x]", decode_bytes);
+			//$display("decode_bytes [%x]", decode_bytes);
 			bytes_decoded_this_cycle = 0;
 			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			error_code = ec_none;
@@ -367,15 +482,18 @@ module Core (
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
-			/* decoding */
-			decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
-
-			/* finish decode cycle */
+			/* output */
 			$write("%d:", bytes_decoded_this_cycle);
 			for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
 				$write(" %x", decode_bytes[i * 8 +: 8]);
 			end
-			$write("\n");
+			$write("\n\t");
+			decode_output(prefix, rex, opcode, modrm, sib, disp, imme);
+			decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
+
+			/* decoding */
+
+			/* finish decode cycle */
 			//$display("Prefix: %d[%b]", prefix, prefix);
 			//$display("REX: %x[%b]", rex, rex);
 			//$display("Opcode: %x[%b]", opcode, opcode);
