@@ -1,5 +1,5 @@
 /* Defines */
-`define DECODER_OUTPUT
+`define DECODER_OUTPUT 1
 
 /* Typedefs */
 typedef struct packed {
@@ -60,6 +60,30 @@ typedef struct packed {
 	logic[63:0] value;
 	logic[3:0] size;
 } imme_t;
+
+typedef struct packed {
+	/*
+	 * 3'h1: b
+	 * 3'h2: w
+	 * 3'h5: z
+	 * 3'h6: v
+	 */
+	logic[2:0] size;
+	logic[4:0] t;
+} oprd_desc_t;
+
+`define OPRD_T_NONE 5'h00
+`define OPRD_T_E 5'h01
+`define OPRD_T_G 5'h02
+`define OPRD_T_I 5'h03
+`define OPRD_T_J 5'h04
+`define OPRD_T_F 5'h05
+`define OPRD_T_M 5'h06
+`define OPRD_T_eAX 5'h1D /* AX, EAX */
+`define OPRD_T_rAX 5'h1E /* AX, EAX, RAX */
+`define OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
+
+
 
 module Core (
 	input[63:0] entry
@@ -251,7 +275,176 @@ module Core (
 		endcase
 	endfunction
 
+	function oprd_desc_t get_operand1_desc(_opcode_t opcode);
+		oprd_desc_t[255:0] operand1_desc = {
+			/* 100 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* F8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* F0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* E8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* E0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* D8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* D0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* C8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* C0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* B8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* B0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* A8 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* A0 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 98 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 90 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 88 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 80 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 78 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 70 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 68 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 60 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 58 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 50 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 48 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 40 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 38 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 30 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 28 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 20 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 18 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 10 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			/* 08 */
+			{ 3'h0, `OPRD_T_NONE }, { 3'h0, `OPRD_T_NONE },
+			{ 3'h1, `OPRD_T_eAX }, { 3'h1, `OPRD_T_G },
+			{ 3'h6, `OPRD_T_G }, { 3'h1, `OPRD_T_G },
+			{ 3'h6, `OPRD_T_E }, { 3'h1, `OPRD_T_E }
+			/* 00 */
+		};
+
+		get_operand1_desc = operand1_desc[opcode];
+	endfunction
+
 `ifdef DECODER_OUTPUT
+	/* FIXME: remove this */
 	/* verilator lint_off UNUSED */
 	function logic decode_modrm_opcode_output(opcode_t opcode, modrm_t modrm);
 		assert(modrm.exist == 1)
@@ -300,7 +493,13 @@ module Core (
 
 	function logic decode_output(gene_pref_t prefix, rex_t rex,
 		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
-		decode_output = 1;
+
+		int effect_operand = 0;
+		int effect_address = 0;
+
+		effect_operand = (rex.W == 1) ? 64 :
+			((prefix.grp[2] == 0) ? 32 : 16);
+		effect_address = (prefix.grp[3] == 0) ? 64 : 32;
 
 		/* Opcode */
 		casez (opcode)
@@ -353,7 +552,10 @@ module Core (
 			10'h0C7: $write(" mov");
 			default: $write("Unknown opcode[%x]", opcode);
 		endcase
+
+		/* Operand */
 		$write("\n");
+		decode_output = 0;
 	endfunction
 	/* verilator lint_on UNUSED */
 `endif
