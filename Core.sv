@@ -68,7 +68,6 @@ typedef struct packed {
 `define OPRD_T_J 5'h04
 `define OPRD_T_F 5'h05
 `define OPRD_T_M 5'h06
-`define OPRD_T_eAX 5'h1D /* AX, EAX */
 `define OPRD_T_rAX 5'h1E /* AX, EAX, RAX */
 `define OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
 
@@ -575,42 +574,42 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 40 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 38 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 30 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 28 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 20 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 18 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 10 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 08 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_eAX },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E }
 			/* 00 */
