@@ -650,14 +650,14 @@ module Core (
 				end
 				else begin
 					case (reg_no[1:0])
-						2'h0: $write("%%%s", (size == 64) ? "ERROR" :
-						    ((size == 32) ? "esp" : ((size == 16) ? "sp" : "ah")));
-						2'h1: $write("%%%s", (size == 64) ? "ERROR" :
-						    ((size == 32) ? "ebp" : ((size == 16) ? "bp" : "ch")));
-						2'h2: $write("%%%s", (size == 64) ? "ERROR" :
-						    ((size == 32) ? "esi" : ((size == 16) ? "si" : "dh")));
-						2'h3: $write("%%%s", (size == 64) ? "ERROR" :
-							((size == 32) ? "esi" : ((size == 16) ? "si" : "dh")));
+						2'h0: $write("%%%s", (size == 64) ? "rsp" :
+						    ((size == 32) ? "esp" : ((size == 16) ? "sp" : "spl")));
+						2'h1: $write("%%%s", (size == 64) ? "rbp" :
+						    ((size == 32) ? "ebp" : ((size == 16) ? "bp" : "bpl")));
+						2'h2: $write("%%%s", (size == 64) ? "rsi" :
+						    ((size == 32) ? "esi" : ((size == 16) ? "si" : "sil")));
+						2'h3: $write("%%%s", (size == 64) ? "rdi" :
+							((size == 32) ? "esi" : ((size == 16) ? "si" : "dil")));
 					endcase
 				end
 			end
@@ -682,6 +682,9 @@ module Core (
 		output_GPR = 0;
 	endfunction
 
+	function logic output_disp(disp_t disp, int efct_size);
+	endfunction
+
 	function logic output_operand_E(oprd_desc_t oprd, rex_t rex, modrm_t modrm,
 		sib_t sib, disp_t disp, int efct_size);
 		int actual_size = 0;
@@ -695,10 +698,29 @@ module Core (
 			default: $write("Invalid oprd2 size %x", oprd.size);
 		endcase
 
-		case (modrm.v.mod)
-			2'b11: output_GPR({rex.B, modrm.v.rm}, rex, actual_size);
-			default: $write("Invalid ModR/M.mod (%x)", modrm.v.mod);
-		endcase
+		if (modrm.v.mod == 2'b11) begin
+			/* Reg */
+			output_GPR({rex.B, modrm.v.rm}, rex, actual_size);
+		end
+		else if (modrm.v.rm == 3'b100) begin
+			/* SIB */
+			;
+		end
+		else begin
+			case (modrm.v.mod)
+				2'b00: begin
+					if (modrm.v.rm == 3'b101) begin
+						;
+					end
+					else begin
+						;
+					end
+				end
+				2'b01: ;
+				2'b10: ;
+				default: $write("Invalid ModR/M.mod (%x)", modrm.v.mod);
+			endcase
+		end
 		output_operand_E = 0;
 	endfunction
 
@@ -780,24 +802,35 @@ module Core (
 			/* one-byte opcodes */
 			/* 00 - 07 */
 			10'b00_0000_0???: $write(" add");
+
 			/* 20 - 27 */
 			10'b00_0010_0???: $write(" and");
+
 			/* 28 - 2D */
 			10'b00_0010_1???: $write(" sub");
+
 			/* 30 - 37 */
 			10'b00_0011_0???: $write(" xor");
+
 			/* 38 - 3D */
 			10'b00_0011_1???: $write(" cmp");
+
 			/* 50 - 57 */
 			10'b00_0101_0???: $write(" push");
+
 			/* 58 - 5f */
 			10'b00_0101_1???: $write(" pop");
+
 			10'h06C: $write(" insb/ins");
 			10'h06F: $write(" outs/outsw/outsd");
+
+			/* 70 - 7F */
 			10'h07?: $write(" jcc");
+
 			/* 84 - 85 */
 			10'b00_1000_010?: $write(" test");
-			10'h089: $write(" xor");
+
+			10'h089: $write(" mov");
 			10'h08B: $write(" mov");
 			10'h08D: $write(" lea");
 			10'h090: $write(" nop");
