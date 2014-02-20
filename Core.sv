@@ -682,20 +682,36 @@ module Core (
 		output_GPR = 0;
 	endfunction
 
-	function logic output_operand_E(oprd_desc_t oprd, rex_t rex, modrm_t modrm, int oprd_size);
+	function logic output_operand_E(oprd_desc_t oprd, rex_t rex, modrm_t modrm,
+		sib_t sib, disp_t disp, int efct_size);
+		int actual_size = 0;
+		case (oprd.size)
+			`OPRD_SZ_B: actual_size = 8;
+			`OPRD_SZ_W: actual_size = 16;
+			`OPRD_SZ_Z: actual_size = (rex.W == 1) ? 32 :
+				((efct_size == 32) ? 32 : 16);
+			`OPRD_SZ_V: actual_size = (rex.W == 1) ? 64 :
+				((efct_size == 32) ? 32 : 16);
+			default: $write("Invalid oprd2 size %x", oprd.size);
+		endcase
+
+		case (modrm.v.mod)
+			2'b11: output_GPR({rex.B, modrm.v.rm}, rex, actual_size);
+			default: $write("Invalid ModR/M.mod (%x)", modrm.v.mod);
+		endcase
 		output_operand_E = 0;
 	endfunction
 
-	function logic output_operand_G(oprd_desc_t oprd, rex_t rex, modrm_t modrm, int oprd_size);
+	function logic output_operand_G(oprd_desc_t oprd, rex_t rex, modrm_t modrm, int efct_size);
 		int reg_size = 0;
 		case (oprd.size)
 			`OPRD_SZ_B: reg_size = 8;
 			`OPRD_SZ_W: reg_size = 16;
 			`OPRD_SZ_Z: reg_size = (rex.W == 1) ? 32 :
-				((oprd_size == 32) ? 32 : 16);
+				((efct_size == 32) ? 32 : 16);
 			`OPRD_SZ_V: reg_size = (rex.W == 1) ? 64 :
-				((oprd_size == 32) ? 32 : 16);
-			default: $write("Invalid oprd size %x", oprd.size);
+				((efct_size == 32) ? 32 : 16);
+			default: $write("Invalid oprd1 size %x", oprd.size);
 		endcase
 		output_GPR({rex.R, modrm.v.reg_op}, rex, reg_size);
 		output_operand_G = 0;
@@ -816,7 +832,7 @@ module Core (
 		if (oprd2 != 0) begin
 			$write("\t");
 			case (oprd2.t)
-				`OPRD_T_E: output_operand_E(oprd2, rex, modrm, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd2, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
@@ -827,7 +843,7 @@ module Core (
 		if (oprd1 != 0) begin
 			$write(", ");
 			case (oprd1.t)
-				`OPRD_T_E: output_operand_E(oprd1, rex, modrm, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd1, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd1, rex, modrm, effect_oprd_size);
 				default: $write("Unknown operand type (%x)", oprd1.t);
 			endcase
