@@ -72,8 +72,10 @@ typedef struct packed {
 `define OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
 
 `define OPRD_SZ_0 3'h0
-`define OPRD_SZ_B 3'h1
-`define OPRD_SZ_W 3'h2
+`define OPRD_SZ_B 3'h1	/* BYTE */
+`define OPRD_SZ_W 3'h2	/* WORD */
+`define OPRD_SZ_D 3'h3	/* DWORD */
+`define OPRD_SZ_Q 3'h4	/* QWORD */
 `define OPRD_SZ_Z 3'h5
 `define OPRD_SZ_V 3'h6
 
@@ -293,13 +295,13 @@ module Core (
 			/* F0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Z, `OPRD_T_J }, { `OPRD_SZ_Z, `OPRD_T_J },
 			/* E8 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
 			/* E0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -316,25 +318,25 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* C8 */
+			{ `OPRD_SZ_Z, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			/* C0 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
 			/* B8 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
 			/* B0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Z, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			/* A8 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -352,44 +354,44 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 90 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_0, `OPRD_T_M }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
+			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			/* 88 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
+			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Z, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			/* 80 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
 			/* 78 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
+			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
 			/* 70 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_B, `OPRD_T_I },
+			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_Z, `OPRD_T_I },
 			/* 68 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 60 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
 			/* 58 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
 			/* 50 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -445,8 +447,16 @@ module Core (
 
 		if (opcode.escape == 0)
 			get_operand2_desc = operand2_desc[opcode];
+		else if (opcode.escape == 1) begin
+			casez (opcode.opcode)
+				default: begin
+					$write("ERROR, unsupported 2-byte opcode");
+					get_operand2_desc = 0;
+				end
+			endcase
+		end
 		else
-			get_operand2_desc = 0;
+			$write("ERROR, unsupported escape");
 	endfunction
 
 
@@ -488,10 +498,10 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* C8 */
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* C0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -506,7 +516,7 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Z, `OPRD_T_rAX }, { `OPRD_SZ_B, `OPRD_T_rAX },
 			/* A8 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -524,14 +534,14 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 90 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 88 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_V, `OPRD_T_E },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* 80 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -617,8 +627,16 @@ module Core (
 
 		if (opcode.escape == 0)
 			get_operand1_desc = operand1_desc[opcode];
+		else if (opcode.escape == 1) begin
+			casez (opcode.opcode)
+				default: begin
+					$write("ERROR, unsupported 2-byte opcode");
+					get_operand1_desc = 0;
+				end
+			endcase
+		end
 		else
-			get_operand1_desc = 0;
+			$write("ERROR, unsupported escape");
 	endfunction
 
 `ifdef DECODER_OUTPUT
@@ -726,9 +744,11 @@ module Core (
 		end
 		else if (modrm.v.rm == 3'b100) begin
 			/* SIB */
+			/* TODO */
 			;
 		end
 		else begin
+			int addr_size = (prefix.grp[3] != 8'h67) ? 64 : 32;
 			case (modrm.v.mod)
 				2'b00: begin
 					if (modrm.v.rm == 3'b101) begin
@@ -736,17 +756,32 @@ module Core (
 					end
 					else begin
 						$write("(");
-						output_GPR({rex.B, modrm.v.rm}, rex,
-							((prefix.grp[3] != 8'h67) ? 64 : 32));
+						/* here we need to pretend rex is not 0 to force 64-bit mode */
+						output_GPR({rex.B, modrm.v.rm}, (addr_size == 64) ? 1 : 0, addr_size);
 						$write(")");
 					end
 				end
-				2'b01: ;
-				2'b10: ;
+				2'b01: begin
+					output_disp(disp, efct_size);
+					$write("(");
+					output_GPR({rex.B, modrm.v.rm}, (addr_size == 64) ? 1 : 0, addr_size);
+					$write(")");
+				end
+				2'b10: begin
+					output_disp(disp, efct_size);
+					$write("(");
+					output_GPR({rex.B, modrm.v.rm}, (addr_size == 64) ? 1 : 0, addr_size);
+					$write(")");
+				end
 				default: $write("Invalid ModR/M.mod (%x)", modrm.v.mod);
 			endcase
 		end
 		output_operand_E = 0;
+	endfunction
+
+	function logic output_operand_op(oprd_desc_t oprd, gene_pref_t prefix, rex_t rex, modrm_t modrm,
+		sib_t sib, disp_t disp, int efct_size);
+		output_operand_op = 0;
 	endfunction
 
 	function logic output_operand_G(oprd_desc_t oprd, rex_t rex, modrm_t modrm, int efct_size);
