@@ -682,10 +682,32 @@ module Core (
 		output_GPR = 0;
 	endfunction
 
-	function logic output_disp(disp_t disp, int efct_size);
+	/* For immediate, we need to extend to effective operand size */
+	function logic output_imme(disp_t disp, int efct_size);
+		int disp_size;
+		disp_size[2:0] = disp.size;
+		disp_size[31:3] = { 29{1'b0} };
+
+		output_imme = 0;
 	endfunction
 
-	function logic output_operand_E(oprd_desc_t oprd, rex_t rex, modrm_t modrm,
+	/* For displacement, we don't extend to effective operand size */
+	function logic output_disp(disp_t disp, int efct_size);
+		logic[7:0] disp_size = disp.size * 8;
+
+		/* XXX: Assume all displacement are signed numbers */
+		if (disp.value[disp_size-1] == 1) begin
+			logic[31:0] new_disp = ~(disp.value - 1);
+			$write("-0x%x", new_disp);
+		end
+		else begin
+			$write("0x%x", disp.value);
+		end
+
+		output_disp = 0;
+	endfunction
+
+	function logic output_operand_E(oprd_desc_t oprd, gene_pref_t prefix, rex_t rex, modrm_t modrm,
 		sib_t sib, disp_t disp, int efct_size);
 		int actual_size = 0;
 		case (oprd.size)
@@ -710,10 +732,13 @@ module Core (
 			case (modrm.v.mod)
 				2'b00: begin
 					if (modrm.v.rm == 3'b101) begin
-						;
+						output_disp(disp, efct_size);
 					end
 					else begin
-						;
+						$write("(");
+						output_GPR({rex.B, modrm.v.rm}, rex,
+							((prefix.grp[3] != 8'h67) ? 64 : 32));
+						$write(")");
 					end
 				end
 				2'b01: ;
@@ -865,7 +890,7 @@ module Core (
 		if (oprd2 != 0) begin
 			$write("\t");
 			case (oprd2.t)
-				`OPRD_T_E: output_operand_E(oprd2, rex, modrm, sib, disp, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd2, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
@@ -876,7 +901,7 @@ module Core (
 		if (oprd1 != 0) begin
 			$write(", ");
 			case (oprd1.t)
-				`OPRD_T_E: output_operand_E(oprd1, rex, modrm, sib, disp, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd1, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd1, rex, modrm, effect_oprd_size);
 				default: $write("Unknown operand type (%x)", oprd1.t);
 			endcase
