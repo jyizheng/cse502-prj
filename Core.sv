@@ -78,6 +78,7 @@ typedef struct packed {
 `define OPRD_SZ_Q 3'h4	/* QWORD */
 `define OPRD_SZ_Z 3'h5
 `define OPRD_SZ_V 3'h6
+`define OPRD_SZ_AV 3'h7	/* Ev for address */
 
 typedef struct packed {
 	/*
@@ -280,7 +281,7 @@ module Core (
 		endcase
 	endfunction
 
-	function oprd_desc_t get_operand2_desc(opcode_t opcode);
+	function oprd_desc_t get_operand2_desc(opcode_t opcode, modrm_t modrm);
 		oprd_desc_t[255:0] operand2_desc = {
 			/* 100 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -445,8 +446,19 @@ module Core (
 			/* 00 */
 		};
 
+		get_operand2_desc = 0;
 		if (opcode.escape == 0)
-			get_operand2_desc = operand2_desc[opcode];
+			case (opcode.opcode)
+				8'hFF: begin
+					if (modrm.exist == 0)
+						$write("ERROR no modrm.op (%x : %x)", opcode, modrm.v.reg_op);
+					else if (modrm.v.reg_op == 3'b010)
+						get_operand2_desc = { `OPRD_SZ_AV, `OPRD_T_E };
+					else
+						$write("ERROR unsupported modrm.op (%x : %x)", opcode, modrm.v.reg_op);
+				end
+				default: get_operand2_desc = operand2_desc[opcode];
+			endcase
 		else if (opcode.escape == 1) begin
 			casez (opcode.opcode)
 				default: begin
@@ -643,6 +655,7 @@ module Core (
 	/* FIXME: remove this */
 	/* verilator lint_off UNUSED */
 
+	/* set rex to non-zero to force 64-bit regs */
 	function logic output_GPR(logic[3:0] reg_no, rex_t rex, int size);
 		casez (reg_no)
 			4'h0: $write("%%%s", (size == 64) ? "rax" :
@@ -656,14 +669,14 @@ module Core (
 			4'b01??: begin
 				if (rex == 0) begin
 					case (reg_no[1:0])
-						2'h0: $write("%%%s", (size == 64) ? "ERROR" :
+						2'h0: $write("%%%s", (size == 64) ? "ERR" :
 						    ((size == 32) ? "esp" : ((size == 16) ? "sp" : "ah")));
-						2'h1: $write("%%%s", (size == 64) ? "ERROR" :
+						2'h1: $write("%%%s", (size == 64) ? "ERR" :
 						    ((size == 32) ? "ebp" : ((size == 16) ? "bp" : "ch")));
-						2'h2: $write("%%%s", (size == 64) ? "ERROR" :
+						2'h2: $write("%%%s", (size == 64) ? "ERR" :
 						    ((size == 32) ? "esi" : ((size == 16) ? "si" : "dh")));
-						2'h3: $write("%%%s", (size == 64) ? "ERROR" :
-							((size == 32) ? "esi" : ((size == 16) ? "si" : "dh")));
+						2'h3: $write("%%%s", (size == 64) ? "ERR" :
+							((size == 32) ? "edi" : ((size == 16) ? "si" : "dh")));
 					endcase
 				end
 				else begin
@@ -675,7 +688,7 @@ module Core (
 						2'h2: $write("%%%s", (size == 64) ? "rsi" :
 						    ((size == 32) ? "esi" : ((size == 16) ? "si" : "sil")));
 						2'h3: $write("%%%s", (size == 64) ? "rdi" :
-							((size == 32) ? "esi" : ((size == 16) ? "si" : "dil")));
+							((size == 32) ? "edi" : ((size == 16) ? "di" : "dil")));
 					endcase
 				end
 			end
@@ -701,12 +714,54 @@ module Core (
 	endfunction
 
 	/* For immediate, we need to extend to effective operand size */
-	function logic output_imme(disp_t disp, int efct_size);
-		int disp_size;
-		disp_size[2:0] = disp.size;
-		disp_size[31:3] = { 29{1'b0} };
+	function logic output_operand_I(imme_t imme, int efct_size);
+		int imme_size = 0;
+		imme_size[3:0] = imme.size;
+		imme_size = imme_size * 8;
 
-		output_imme = 0;
+		if (efct_size == 64) begin
+			if (imme_size == efct_size)
+				$write("$0x%x", imme.value);
+			else if (imme_size < efct_size) begin
+				logic[63:0] imme_value;
+				imme_value = imme.value[63:0];
+				for (int i = imme_size; i < efct_size; i += 1)
+					imme_value[i] = imme.value[imme_size-1];
+				$write("$0x%x", imme_value);
+			end
+			else if (imme_size > efct_size)
+				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		end
+		else if (efct_size == 32) begin
+			if (imme_size == efct_size)
+				$write("$0x%x", imme.value[31:0]);
+			else if (imme_size < efct_size) begin
+				logic[32:0] imme_value;
+				imme_value = imme.value[32:0];
+				for (int i = imme_size; i < efct_size; i += 1)
+					imme_value[i] = imme.value[imme_size-1];
+				$write("$0x%x", imme_value);
+			end
+			else if (imme_size > efct_size)
+				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		end
+		else if (efct_size == 16) begin
+			if (imme_size == efct_size)
+				$write("$0x%x", imme.value[15:0]);
+			else if (imme_size < efct_size) begin
+				logic[15:0] imme_value;
+				imme_value = imme.value[15:0];
+				for (int i = imme_size; i < efct_size; i += 1)
+					imme_value[i] = imme.value[imme_size-1];
+				$write("$0x%x", imme_value);
+			end
+			else if (imme_size > efct_size)
+				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		end
+		else
+			$write("ERROR: unsupported effective size");
+
+		output_operand_I = 0;
 	endfunction
 
 	/* For displacement, we don't extend to effective operand size */
@@ -725,9 +780,20 @@ module Core (
 		output_disp = 0;
 	endfunction
 
+	function logic output_operand_J(imme_t imme, int efct_size);
+		int disp_size;
+		disp_size[3:0] = imme.size;
+		disp_size[31:3] = { 29{1'b0} };
+
+		output_operand_J = 0;
+	endfunction
+
 	function logic output_operand_E(oprd_desc_t oprd, gene_pref_t prefix, rex_t rex, modrm_t modrm,
 		sib_t sib, disp_t disp, int efct_size);
 		int actual_size = 0;
+		int addr_size = (prefix.grp[3] != 8'h67) ? 64 : 32;
+		rex_t rex_override = rex;
+
 		case (oprd.size)
 			`OPRD_SZ_B: actual_size = 8;
 			`OPRD_SZ_W: actual_size = 16;
@@ -735,20 +801,23 @@ module Core (
 				((efct_size == 32) ? 32 : 16);
 			`OPRD_SZ_V: actual_size = (rex.W == 1) ? 64 :
 				((efct_size == 32) ? 32 : 16);
+			`OPRD_SZ_AV: if (addr_size == 64 && rex_override == 0) begin
+				rex_override.W = 1;
+				actual_size = addr_size;
+			end
 			default: $write("Invalid oprd2 size %x", oprd.size);
 		endcase
 
 		if (modrm.v.mod == 2'b11) begin
 			/* Reg */
-			output_GPR({rex.B, modrm.v.rm}, rex, actual_size);
+			output_GPR({rex.B, modrm.v.rm}, rex_override, actual_size);
 		end
 		else if (modrm.v.rm == 3'b100) begin
 			/* SIB */
 			/* TODO */
-			;
+			$write("SIB note implemented");
 		end
 		else begin
-			int addr_size = (prefix.grp[3] != 8'h67) ? 64 : 32;
 			case (modrm.v.mod)
 				2'b00: begin
 					if (modrm.v.rm == 3'b101) begin
@@ -921,12 +990,13 @@ module Core (
 		endcase
 
 		/* Operand, display 2nd operand first */
-		oprd2 = get_operand2_desc(opcode);
+		oprd2 = get_operand2_desc(opcode, modrm);
 		if (oprd2 != 0) begin
 			$write("\t");
 			case (oprd2.t)
 				`OPRD_T_E: output_operand_E(oprd2, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
+				`OPRD_T_I: output_operand_I(imme, effect_oprd_size);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
 		end
