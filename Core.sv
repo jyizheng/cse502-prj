@@ -68,6 +68,9 @@ typedef struct packed {
 `define OPRD_T_J 5'h04
 `define OPRD_T_F 5'h05
 `define OPRD_T_M 5'h06
+`define OPRD_T_X 5'h07
+`define OPRD_T_Y 5'h08
+`define OPRD_T_DX 5'h1D
 `define OPRD_T_rAX 5'h1E /* AX, EAX, RAX */
 `define OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
 
@@ -374,8 +377,8 @@ module Core (
 			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
 			{ `OPRD_SZ_B, `OPRD_T_J }, { `OPRD_SZ_B, `OPRD_T_J },
 			/* 70 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_Z, `OPRD_T_X }, { `OPRD_SZ_B, `OPRD_T_X },
+			{ `OPRD_SZ_W, `OPRD_T_DX }, { `OPRD_SZ_W, `OPRD_T_DX },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_B, `OPRD_T_I },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_Z, `OPRD_T_I },
 			/* 68 */
@@ -566,8 +569,8 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 70 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_W, `OPRD_T_DX }, { `OPRD_SZ_W, `OPRD_T_DX },
+			{ `OPRD_SZ_Z, `OPRD_T_Y }, { `OPRD_SZ_B, `OPRD_T_Y },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 68 */
@@ -1130,6 +1133,8 @@ module Core (
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				`OPRD_T_I: output_operand_I(imme, effect_oprd_size);
 				`OPRD_T_J: output_operand_J(imme, effect_addr_size);
+				`OPRD_T_X: $write("%%ds(%%rsi)");
+				`OPRD_T_DX: $write("(%%dx)");
 				`OPRD_T_OP: output_operand_OP(oprd2, prefix, rex, opcode, modrm);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
@@ -1142,6 +1147,8 @@ module Core (
 			case (oprd1.t)
 				`OPRD_T_E: output_operand_E(oprd1, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd1, rex, modrm, effect_oprd_size);
+				`OPRD_T_Y: $write("%%es(%%rdi)");
+				`OPRD_T_DX: $write("(%%dx)");
 				`OPRD_T_OP: output_operand_OP(oprd1, prefix, rex, opcode, modrm);
 				default: $write("Unknown operand type (%x)", oprd1.t);
 			endcase
