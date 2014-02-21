@@ -962,13 +962,13 @@ module Core (
 		case (oprd.size)
 			`OPRD_SZ_B: reg_size = 8;
 			`OPRD_SZ_W: reg_size = 16;
-			`OPRD_SZ_Z: reg_size = (rex.W == 1) ? 32 :
+			`OPRD_SZ_Z: reg_size = (rex_override.W == 1) ? 32 :
 				((prefix.grp[2] != 8'h66) ? 32 : 16);
-			`OPRD_SZ_V: reg_size = (rex.W == 1) ? 64 :
+			`OPRD_SZ_V: reg_size = (rex_override.W == 1) ? 64 :
 				((prefix.grp[2] != 8'h66) ? 32 : 16);
 			default: $write("Invalid oprd1 size %x", oprd.size);
 		endcase
-		output_GPR({rex.B, opcode.opcode[2:0]}, rex, reg_size);
+		output_GPR({rex.B, opcode.opcode[2:0]}, rex_override, reg_size);
 		output_operand_OP = 0;
 	endfunction
 
