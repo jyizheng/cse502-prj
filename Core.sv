@@ -956,6 +956,28 @@ module Core (
 		decode_modrm_opcode_output = 0;
 	endfunction
 
+	function logic output_condition(logic[3:0] code);
+		case (code)
+			4'h0: $write("o");
+			4'h1: $write("no");
+			4'h2: $write("b");
+			4'h3: $write("ae");
+			4'h4: $write("z");
+			4'h5: $write("nz");
+			4'h6: $write("be");
+			4'h7: $write("a");
+			4'h8: $write("s");
+			4'h9: $write("ns");
+			4'hA: $write("p");
+			4'hB: $write("np");
+			4'hC: $write("l");
+			4'hD: $write("ge");
+			4'hE: $write("le");
+			4'hF: $write("g");
+		endcase
+		output_condition = 0;
+	endfunction
+
 	function logic decode_output(gene_pref_t prefix, rex_t rex,
 		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
 
@@ -997,7 +1019,10 @@ module Core (
 			10'h06F: $write(" outs/outsw/outsd");
 
 			/* 70 - 7F */
-			10'h07?: $write(" jcc");
+			10'h07?: begin
+				$write(" j");
+				output_condition(opcode.opcode[3:0]);
+			end
 
 			/* 84 - 85 */
 			10'b00_1000_010?: $write(" test");
@@ -1015,7 +1040,10 @@ module Core (
 			/* two-byte opcodes */
 			10'h105: $write(" syscall");
 			10'h11f: $write(" nop");
-			10'h18?: $write(" jcc");
+			10'h18?: begin
+				$write(" j");
+				output_condition(opcode.opcode[3:0]);
+			end
 			10'h1af: $write(" imul");
 
 			/* --- Special group w/ ModR/M opcode --- */
