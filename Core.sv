@@ -736,8 +736,8 @@ module Core (
 			if (imme_size == efct_size)
 				$write("$0x%x", imme.value[31:0]);
 			else if (imme_size < efct_size) begin
-				logic[32:0] imme_value;
-				imme_value = imme.value[32:0];
+				logic[31:0] imme_value;
+				imme_value = imme.value[31:0];
 				for (int i = imme_size; i < efct_size; i += 1)
 					imme_value[i] = imme.value[imme_size-1];
 				$write("$0x%x", imme_value);
