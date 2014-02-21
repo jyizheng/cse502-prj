@@ -461,6 +461,7 @@ module Core (
 			endcase
 		else if (opcode.escape == 1) begin
 			casez (opcode.opcode)
+				8'h05: get_operand2_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
 				default: begin
 					$write("ERROR, unsupported 2-byte opcode");
 					get_operand2_desc = 0;
@@ -472,7 +473,7 @@ module Core (
 	endfunction
 
 
-	function oprd_desc_t get_operand1_desc(opcode_t opcode);
+	function oprd_desc_t get_operand1_desc(opcode_t opcode, modrm_t modrm);
 		oprd_desc_t[255:0] operand1_desc = {
 			/* 100 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -637,12 +638,24 @@ module Core (
 			/* 00 */
 		};
 
+		get_operand1_desc = 0;
 		if (opcode.escape == 0)
-			get_operand1_desc = operand1_desc[opcode];
+			case (opcode.opcode)
+				8'hFF: begin
+					if (modrm.exist == 0)
+						$write("ERROR no modrm.op (%x : %x)", opcode, modrm.v.reg_op);
+					else if (modrm.v.reg_op == 3'b010)
+						get_operand1_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
+					else
+						$write("ERROR unsupported modrm.op (%x : %x)", opcode, modrm.v.reg_op);
+				end
+				default: get_operand1_desc = operand1_desc[opcode];
+			endcase
 		else if (opcode.escape == 1) begin
 			casez (opcode.opcode)
+				8'h05: get_operand1_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
 				default: begin
-					$write("ERROR, unsupported 2-byte opcode");
+					$write("ERROR, unsupported 2-byte opcode %x", opcode.opcode);
 					get_operand1_desc = 0;
 				end
 			endcase
@@ -764,6 +777,44 @@ module Core (
 		output_operand_I = 0;
 	endfunction
 
+	/* For immediate, we need to extend to effective operand size */
+	function logic output_operand_J(imme_t imme, int efct_size);
+		int imme_size = 0;
+		imme_size[3:0] = imme.size;
+		imme_size = imme_size * 8;
+
+		if (efct_size == 64) begin
+			if (imme_size == efct_size)
+				$write("$0x%x", imme.value);
+			else if (imme_size < efct_size) begin
+				logic[63:0] imme_value;
+				imme_value = imme.value[63:0];
+				for (int i = imme_size; i < efct_size; i += 1)
+					imme_value[i] = imme.value[imme_size-1];
+				$write("$0x%x", imme_value);
+			end
+			else if (imme_size > efct_size)
+				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		end
+		else if (efct_size == 32) begin
+			if (imme_size == efct_size)
+				$write("$0x%x", imme.value[31:0]);
+			else if (imme_size < efct_size) begin
+				logic[31:0] imme_value;
+				imme_value = imme.value[31:0];
+				for (int i = imme_size; i < efct_size; i += 1)
+					imme_value[i] = imme.value[imme_size-1];
+				$write("$0x%x", imme_value);
+			end
+			else if (imme_size > efct_size)
+				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		end
+		else
+			$write("ERROR: unsupported effective size");
+
+		output_operand_J = 0;
+	endfunction
+
 	/* For displacement, we don't extend to effective operand size */
 	function logic output_disp(disp_t disp, int efct_size);
 		logic[7:0] disp_size = disp.size * 8;
@@ -778,14 +829,6 @@ module Core (
 		end
 
 		output_disp = 0;
-	endfunction
-
-	function logic output_operand_J(imme_t imme, int efct_size);
-		int disp_size;
-		disp_size[3:0] = imme.size;
-		disp_size[31:3] = { 29{1'b0} };
-
-		output_operand_J = 0;
 	endfunction
 
 	function logic output_operand_E(oprd_desc_t oprd, gene_pref_t prefix, rex_t rex, modrm_t modrm,
@@ -997,11 +1040,12 @@ module Core (
 				`OPRD_T_E: output_operand_E(oprd2, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				`OPRD_T_I: output_operand_I(imme, effect_oprd_size);
+				`OPRD_T_J: output_operand_J(imme, effect_addr_size);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
 		end
 
-		oprd1 = get_operand1_desc(opcode);
+		oprd1 = get_operand1_desc(opcode, modrm);
 
 		if (oprd1 != 0) begin
 			$write(", ");
