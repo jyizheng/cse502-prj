@@ -358,7 +358,7 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 90 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_M }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_M }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			{ `OPRD_SZ_V, `OPRD_T_G }, { `OPRD_SZ_B, `OPRD_T_G },
 			/* 88 */
@@ -1137,6 +1137,7 @@ module Core (
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				`OPRD_T_I: output_operand_I(imme, effect_oprd_size);
 				`OPRD_T_J: output_operand_J(imme, effect_addr_size);
+				`OPRD_T_M: output_operand_E(oprd2, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_X: $write("%%ds(%%rsi)");
 				`OPRD_T_DX: $write("(%%dx)");
 				`OPRD_T_OP: output_operand_OP(oprd2, prefix, rex, opcode, modrm);
@@ -1300,7 +1301,7 @@ module Core (
 			end
 
 			/* output */
-			$write("%d:", bytes_decoded_this_cycle);
+			$write("(len %d):", bytes_decoded_this_cycle);
 			for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
 				$write(" %x", decode_bytes[i * 8 +: 8]);
 			end
