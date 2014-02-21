@@ -465,6 +465,7 @@ module Core (
 		else if (opcode.escape == 1) begin
 			casez (opcode.opcode)
 				8'h05: get_operand2_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
+				8'h8?: get_operand2_desc = { `OPRD_SZ_Z, `OPRD_T_J };
 				default: begin
 					$write("ERROR, unsupported 2-byte opcode");
 					get_operand2_desc = 0;
@@ -657,6 +658,7 @@ module Core (
 		else if (opcode.escape == 1) begin
 			casez (opcode.opcode)
 				8'h05: get_operand1_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
+				8'h8?: get_operand1_desc = { `OPRD_SZ_0, `OPRD_T_NONE };
 				default: begin
 					$write("ERROR, unsupported 2-byte opcode %x", opcode.opcode);
 					get_operand1_desc = 0;
