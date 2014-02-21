@@ -1186,6 +1186,7 @@ module Core (
 			imme_t imme = 0;
 
 			logic[7:0] next_byte;
+			logic rex_met = 1'b0;
 
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
@@ -1220,96 +1221,116 @@ module Core (
 
 				if (stage_finished == 1)
 					break;
+
+				if (rex_met == 1) begin
+					error_code = ec_rex;
+					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+					break;
+				end
+
+				if (rex != 0)
+					rex_met = 1;
+
 				bytes_decoded_this_cycle += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 			end
 
-			/* Opcode */
-			if (next_byte == 8'h0F) begin
+			if (error_code == ec_rex) begin
+				$write("(len %d):", bytes_decoded_this_cycle);
+				for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
+					$write(" %x", decode_bytes[i * 8 +: 8]);
+				end
+				$write("\n\t[Ignored invalid prefix(es).]\n");
+			end
+			else begin
+				/* Opcode */
+				if (next_byte == 8'h0F) begin
+					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+
+					/* 0F 38 escape */
+					if (next_byte == 8'h38) begin
+						opcode.escape = 2'h10;
+						bytes_decoded_this_cycle += 1;
+						next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+					end
+					/* 0F 3A escape */
+					else if (next_byte == 8'h3A) begin
+						opcode.escape = 2'h11;
+						bytes_decoded_this_cycle += 1;
+						next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+					end
+					/* 0F escape */
+					else
+						opcode.escape = 2'h01;
+				end
+				/* TODO: unsupported opcode */
+				opcode.opcode = next_byte;
 				bytes_decoded_this_cycle += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+				modrm.exist = opcode_has_modrm(opcode);
 
-				/* 0F 38 escape */
-				if (next_byte == 8'h38) begin
-					opcode.escape = 2'h10;
+				if (error_code != ec_none)
+					$finish;
+
+				/* ModR/M */
+				if (modrm.exist == 1) begin
+					modrm.v = next_byte;
 					bytes_decoded_this_cycle += 1;
 					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 				end
-				/* 0F 3A escape */
-				else if (next_byte == 8'h3A) begin
-					opcode.escape = 2'h11;
+
+				/* SIB */
+				if (modrm.v.mod != 2'b11 && modrm.v.rm == 3'b100) begin
+					sib.exist = 1'b1;
+					sib[7:0] = next_byte;
 					bytes_decoded_this_cycle += 1;
 					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
 				end
-				/* 0F escape */
-				else
-					opcode.escape = 2'h01;
-			end
-			/* TODO: unsupported opcode */
-			opcode.opcode = next_byte;
-			bytes_decoded_this_cycle += 1;
-			next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-			modrm.exist = opcode_has_modrm(opcode);
 
-			if (error_code != ec_none)
-				$finish;
+				/* Displacement */
+				if (modrm.v.mod == 2'b01)
+					disp.size = 1;
+				else if (modrm.v.mod == 2'b10)
+					disp.size = 4;
+				else if (modrm.v.mod == 2'b00 && modrm.v.rm == 3'b101)
+					disp.size = 4;
 
-			/* ModR/M */
-			if (modrm.exist == 1) begin
-				modrm.v = next_byte;
-				bytes_decoded_this_cycle += 1;
-				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-			end
+				for (logic[2:0] i = 0; i < disp.size; i += 1) begin
+					disp.value[{2'b00,i}*8 +: 8] = next_byte;
+					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+				end
 
-			/* SIB */
-			if (modrm.v.mod != 2'b11 && modrm.v.rm == 3'b100) begin
-				sib.exist = 1'b1;
-				sib[7:0] = next_byte;
-				bytes_decoded_this_cycle += 1;
-				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-			end
+				/* Immediate */
+				imme.size[2:0] = opcode_imme_size(opcode);
+				if (imme.size[2:0] == 5) begin
+					imme.size = (rex.W == 1) ? 4 :
+						((prefix.grp[2] == 0) ? 4 : 2);
+				end
+				else if (imme.size[2:0] == 6) begin
+					imme.size = (rex.W == 1) ? 8 :
+						((prefix.grp[2] == 0) ? 4 : 2);
+				end
 
-			/* Displacement */
-			if (modrm.v.mod == 2'b01)
-				disp.size = 1;
-			else if (modrm.v.mod == 2'b10)
-				disp.size = 4;
-			else if (modrm.v.mod == 2'b00 && modrm.v.rm == 3'b101)
-				disp.size = 4;
+				for (logic[3:0] i = 0; i < imme.size; i += 1) begin
+					imme.value[{2'b00,i}*8 +: 8] = next_byte;
+					bytes_decoded_this_cycle += 1;
+					next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
+				end
 
-			for (logic[2:0] i = 0; i < disp.size; i += 1) begin
-				disp.value[{2'b00,i}*8 +: 8] = next_byte;
-				bytes_decoded_this_cycle += 1;
-				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-			end
+				/* output */
+				$write("(len %d):", bytes_decoded_this_cycle);
+				for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
+					$write(" %x", decode_bytes[i * 8 +: 8]);
+				end
+				$write("\n\t");
+				decode_output(prefix, rex, opcode, modrm, sib, disp, imme);
+				decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
 
-			/* Immediate */
-			imme.size[2:0] = opcode_imme_size(opcode);
-			if (imme.size[2:0] == 5) begin
-				imme.size = (rex.W == 1) ? 4 :
-					((prefix.grp[2] == 0) ? 4 : 2);
-			end
-			else if (imme.size[2:0] == 6) begin
-				imme.size = (rex.W == 1) ? 8 :
-					((prefix.grp[2] == 0) ? 4 : 2);
-			end
-
-			for (logic[3:0] i = 0; i < imme.size; i += 1) begin
-				imme.value[{2'b00,i}*8 +: 8] = next_byte;
-				bytes_decoded_this_cycle += 1;
-				next_byte = decode_bytes[{3'b000, bytes_decoded_this_cycle} * 8 +: 8];
-			end
-
-			/* output */
-			$write("(len %d):", bytes_decoded_this_cycle);
-			for (int i = 0; i[3:0] < bytes_decoded_this_cycle; i += 1) begin
-				$write(" %x", decode_bytes[i * 8 +: 8]);
-			end
-			$write("\n\t");
-			decode_output(prefix, rex, opcode, modrm, sib, disp, imme);
-			decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
-
-			/* decoding */
+				/* decoding */
+			end /* error_code != ec_rex */
 
 			/* finish decode cycle */
 			//$display("Prefix: %d[%b]", prefix, prefix);
