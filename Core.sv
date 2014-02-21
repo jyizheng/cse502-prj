@@ -324,15 +324,15 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			/* C0 */
-			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
-			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
-			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
-			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_I }, { `OPRD_SZ_V, `OPRD_T_I },
+			{ `OPRD_SZ_V, `OPRD_T_I }, { `OPRD_SZ_V, `OPRD_T_I },
+			{ `OPRD_SZ_V, `OPRD_T_I }, { `OPRD_SZ_V, `OPRD_T_I },
+			{ `OPRD_SZ_V, `OPRD_T_I }, { `OPRD_SZ_V, `OPRD_T_I },
 			/* B8 */
-			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
-			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
-			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
-			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
+			{ `OPRD_SZ_B, `OPRD_T_I }, { `OPRD_SZ_B, `OPRD_T_I },
 			/* B0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -384,15 +384,15 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			/* 60 */
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
 			/* 58 */
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
-			{ `OPRD_SZ_Q, `OPRD_T_OP }, { `OPRD_SZ_Q, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
 			/* 50 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -516,15 +516,15 @@ module Core (
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_V, `OPRD_T_E }, { `OPRD_SZ_B, `OPRD_T_E },
 			/* C0 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
+			{ `OPRD_SZ_V, `OPRD_T_OP }, { `OPRD_SZ_V, `OPRD_T_OP },
 			/* B8 */
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
-			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
+			{ `OPRD_SZ_B, `OPRD_T_OP }, { `OPRD_SZ_B, `OPRD_T_OP },
 			/* B0 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -689,7 +689,7 @@ module Core (
 						2'h2: $write("%%%s", (size == 64) ? "ERR" :
 						    ((size == 32) ? "esi" : ((size == 16) ? "si" : "dh")));
 						2'h3: $write("%%%s", (size == 64) ? "ERR" :
-							((size == 32) ? "edi" : ((size == 16) ? "si" : "dh")));
+							((size == 32) ? "edi" : ((size == 16) ? "di" : "bh")));
 					endcase
 				end
 				else begin
@@ -779,38 +779,66 @@ module Core (
 
 	/* For immediate, we need to extend to effective operand size */
 	function logic output_operand_J(imme_t imme, int efct_size);
-		int imme_size = 0;
-		imme_size[3:0] = imme.size;
-		imme_size = imme_size * 8;
+//		int imme_size = 0;
+//		imme_size[3:0] = imme.size;
+//		imme_size = imme_size * 8;
+//
+//		if (efct_size == 64) begin
+//			if (imme_size == efct_size)
+//				$write("$0x%x", imme.value);
+//			else if (imme_size < efct_size) begin
+//				logic[63:0] imme_value;
+//				imme_value = imme.value[63:0];
+//				for (int i = imme_size; i < efct_size; i += 1)
+//					imme_value[i] = imme.value[imme_size-1];
+//				$write("$0x%x", imme_value);
+//			end
+//			else if (imme_size > efct_size)
+//				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+//		end
+//		else if (efct_size == 32) begin
+//			if (imme_size == efct_size)
+//				$write("$0x%x", imme.value[31:0]);
+//			else if (imme_size < efct_size) begin
+//				logic[31:0] imme_value;
+//				imme_value = imme.value[31:0];
+//				for (int i = imme_size; i < efct_size; i += 1)
+//					imme_value[i] = imme.value[imme_size-1];
+//				$write("$0x%x", imme_value);
+//			end
+//			else if (imme_size > efct_size)
+//				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+//		end
+//		else
+//			$write("ERROR: unsupported effective size");
 
-		if (efct_size == 64) begin
-			if (imme_size == efct_size)
-				$write("$0x%x", imme.value);
-			else if (imme_size < efct_size) begin
-				logic[63:0] imme_value;
-				imme_value = imme.value[63:0];
-				for (int i = imme_size; i < efct_size; i += 1)
-					imme_value[i] = imme.value[imme_size-1];
-				$write("$0x%x", imme_value);
-			end
-			else if (imme_size > efct_size)
-				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
+		logic[7:0] rel_addr_size = imme.size * 8;
+
+		/* XXX: Assume all relative-address are signed numbers */
+		if (imme.value[rel_addr_size-1] == 1) begin
+			case (rel_addr_size)
+				8: begin
+					logic[7:0] new_rel_addr = ~(imme.value[7:0] - 1);
+					$write("-0x%x", new_rel_addr);
+				end
+				16: begin
+					logic[15:0] new_rel_addr = ~(imme.value[15:0] - 1);
+					$write("-0x%x", new_rel_addr);
+				end
+				32: begin
+					logic[31:0] new_rel_addr = ~(imme.value[31:0] - 1);
+					$write("-0x%x", new_rel_addr);
+				end
+				64: begin
+					logic[63:0] new_rel_addr = ~(imme.value[63:0] - 1);
+					$write("-0x%x", new_rel_addr);
+				end
+				default:
+					$write("ERR: Invalid Relative address size %x", rel_addr_size);
+			endcase
 		end
-		else if (efct_size == 32) begin
-			if (imme_size == efct_size)
-				$write("$0x%x", imme.value[31:0]);
-			else if (imme_size < efct_size) begin
-				logic[31:0] imme_value;
-				imme_value = imme.value[31:0];
-				for (int i = imme_size; i < efct_size; i += 1)
-					imme_value[i] = imme.value[imme_size-1];
-				$write("$0x%x", imme_value);
-			end
-			else if (imme_size > efct_size)
-				$write("Immediate size larger than effective?? (%x > %x)", imme_size, efct_size);
-		end
-		else
-			$write("ERROR: unsupported effective size");
+		else 
+			$write("0x%x", imme.value);
 
 		output_operand_J = 0;
 	endfunction
@@ -821,8 +849,18 @@ module Core (
 
 		/* XXX: Assume all displacement are signed numbers */
 		if (disp.value[disp_size-1] == 1) begin
-			logic[31:0] new_disp = ~(disp.value - 1);
-			$write("-0x%x", new_disp);
+			case (disp_size)
+				8: begin
+					logic[7:0] new_disp = ~(disp.value[7:0] - 1);
+					$write("-0x%x", new_disp);
+				end
+				32: begin
+					logic[31:0] new_disp = ~(disp.value[31:0] - 1);
+					$write("-0x%x", new_disp);
+				end
+				default:
+					$write("ERR: Invalid displacement size %x", disp_size);
+			endcase
 		end
 		else begin
 			$write("0x%x", disp.value);
@@ -909,6 +947,29 @@ module Core (
 		endcase
 		output_GPR({rex.R, modrm.v.reg_op}, rex, reg_size);
 		output_operand_G = 0;
+	endfunction
+
+	function logic output_operand_OP(oprd_desc_t oprd, gene_pref_t prefix, rex_t rex, opcode_t opcode, modrm_t modrm);
+		int reg_size = 0;
+		rex_t rex_override = rex;
+
+		/* push/pop instruction */
+		if (opcode.escape == 0 && opcode.opcode[7:4] == 4'h5) begin
+			if (rex.W == 1 || prefix.grp[2] != 8'h66)
+				rex_override.W = 1;
+		end
+
+		case (oprd.size)
+			`OPRD_SZ_B: reg_size = 8;
+			`OPRD_SZ_W: reg_size = 16;
+			`OPRD_SZ_Z: reg_size = (rex.W == 1) ? 32 :
+				((prefix.grp[2] != 8'h66) ? 32 : 16);
+			`OPRD_SZ_V: reg_size = (rex.W == 1) ? 64 :
+				((prefix.grp[2] != 8'h66) ? 32 : 16);
+			default: $write("Invalid oprd1 size %x", oprd.size);
+		endcase
+		output_GPR({rex.B, opcode.opcode[2:0]}, rex, reg_size);
+		output_operand_OP = 0;
 	endfunction
 
 	function logic decode_modrm_opcode_output(opcode_t opcode, modrm_t modrm);
@@ -1031,7 +1092,7 @@ module Core (
 			10'h08B: $write(" mov");
 			10'h08D: $write(" lea");
 			10'h090: $write(" nop");
-			10'h0B?: $write(" mov");
+			10'h0B?: $write(" movabs");
 			10'h0C3: $write(" NEAR ret");
 			10'h0E8: $write(" NEAR call");
 			10'h0E9: $write(" NEAR jmp");
@@ -1069,6 +1130,7 @@ module Core (
 				`OPRD_T_G: output_operand_G(oprd2, rex, modrm, effect_oprd_size);
 				`OPRD_T_I: output_operand_I(imme, effect_oprd_size);
 				`OPRD_T_J: output_operand_J(imme, effect_addr_size);
+				`OPRD_T_OP: output_operand_OP(oprd2, prefix, rex, opcode, modrm);
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
 		end
@@ -1080,6 +1142,7 @@ module Core (
 			case (oprd1.t)
 				`OPRD_T_E: output_operand_E(oprd1, prefix, rex, modrm, sib, disp, effect_oprd_size);
 				`OPRD_T_G: output_operand_G(oprd1, rex, modrm, effect_oprd_size);
+				`OPRD_T_OP: output_operand_OP(oprd1, prefix, rex, opcode, modrm);
 				default: $write("Unknown operand type (%x)", oprd1.t);
 			endcase
 		end
