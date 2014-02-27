@@ -2,11 +2,7 @@
 
 module Core (
 	input[63:0] entry
-,	/* verilator lint_off UNDRIVEN */ /* verilator lint_off UNUSED */ Sysbus bus, /* verilator lint_on UNUSED */ /* verilator lint_on UNDRIVEN */
-	input[3:0] bytes_decoded_this_cycle,
-	output can_decode,
-	output[63:0] fetch_rip,
-	output[0:15*8-1] decode_bytes
+,	/* verilator lint_off UNDRIVEN */ /* verilator lint_off UNUSED */ Sysbus bus /* verilator lint_on UNUSED */ /* verilator lint_on UNDRIVEN */
 );
 	enum { fetch_idle, fetch_waiting, fetch_active } fetch_state;
 	logic[63:0] fetch_rip;
@@ -80,7 +76,6 @@ module Core (
 	always_comb begin
 		if (can_decode) begin : decode_block
 			// cse502 : following is an example of how to finish the simulation
-			$display("[CORE] bytes_decoded = %d", bytes_decoded_this_cycle);
 			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
 		end
 	end
@@ -96,6 +91,9 @@ module Core (
 			decode_offset <= decode_offset + { 3'b0, bytes_decoded_this_cycle };
 
 		end
+
+	/* Decoder module */
+	Decoder decoder(can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
 
 	// cse502 : Use the following as a guide to print the Register File contents.
 	final begin
