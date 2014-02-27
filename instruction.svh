@@ -1,5 +1,7 @@
 /* Defines */
 
+`ifndef _INSTRUCTION_SVH_
+`define _INSTRUCTION_SVH_ 1
 /* Typedefs */
 typedef struct packed {
 	logic[3:0][7:0] grp;
@@ -93,4 +95,6 @@ typedef struct packed {
 	logic[4:0] t;
 } oprd_desc_t;
 
+`endif
 
+/* vim: set ts=4 sw=0 tw=0 noet : */
