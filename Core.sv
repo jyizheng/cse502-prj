@@ -11,7 +11,10 @@ module Core (
 	logic[6:0] fetch_offset, decode_offset;
 
 	/* General-Purpose Registers */
-	logic[63:0] regfile[16];
+	logic clk;
+	logic[15:0][63:0] regfile;
+
+	assign clk = bus.clk;
 
 	function logic mtrr_is_mmio(logic[63:0] physaddr);
 		mtrr_is_mmio = ((physaddr > 640*1024 && physaddr < 1024*1024));
@@ -38,8 +41,7 @@ module Core (
 			fetch_skip <= entry[5:0];
 			fetch_offset <= 0;
 
-			for (int i = 0; i < 16; i += 1)
-				regfile[i] <= 0;
+			regfile <= 0;
 
 		end else begin // !bus.reset
 
@@ -81,7 +83,7 @@ module Core (
 	logic[3:0] bytes_decoded_this_cycle;
 
 	/* Decoder module */
-	Decoder decoder(can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
+	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
 
 	always_comb begin
 		if (can_decode) begin : decode_block

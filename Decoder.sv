@@ -1,14 +1,21 @@
 `include "instruction.svh"
+`include "gpr.svh"
 
 `define DECODER_OUTPUT 1
 
+`define GPR_RAX	4'd0
+
 module Decoder (
+	input clk,
 	input can_decode,
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
 	output[3:0] bytes_decoded
 );
 	enum { ec_none, ec_invalid_op, ec_rex } error_code;
+	logic[63:0] regfile[16];
+	logic[63:0] result;
+	logic[3:0] wb_reg;
 
 	function logic[2:0] opcode_imme_size(opcode_t opcode);
 		/*
@@ -889,6 +896,10 @@ module Decoder (
 		output_condition = 0;
 	endfunction
 
+	always_ff @(posedge clk) begin
+		regfile[wb_reg] <= result;
+	end
+
 	function logic decode_output(gene_pref_t prefix, rex_t rex,
 		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp, imme_t imme);
 
@@ -907,6 +918,18 @@ module Decoder (
 			/* one-byte opcodes */
 			/* 00 - 07 */
 			10'b00_0000_0???: $write(" add");
+
+			/* XXX: W2 */
+			10'h0D: begin
+				$write(" or");
+				if (effect_oprd_size == 64)
+					result = regfile[0] | imme.value;
+				else if (effect_oprd_size == 32)
+					result[31:0] = regfile[0][31:0] | imme.value[31:0];
+				else if (effect_oprd_size == 16)
+					result[15:0] = regfile[0][15:0] | imme.value[15:0];
+				wb_reg = 0;
+			end
 
 			/* 20 - 27 */
 			10'b00_0010_0???: $write(" and");
@@ -1188,6 +1211,25 @@ module Decoder (
 		else begin
 			bytes_decoded = 0;
 		end
+	end
+
+	final begin
+		$display("RAX = %x", regfile[0]);
+		$display("RBX = %x", regfile[3]);
+		$display("RCX = %x", regfile[1]);
+		$display("RDX = %x", regfile[2]);
+		$display("RSI = %x", regfile[6]);
+		$display("RDI = %x", regfile[7]);
+		$display("RBP = %x", regfile[5]);
+		$display("RSP = %x", regfile[4]);
+		$display("R8  = %x", regfile[8]);
+		$display("R9  = %x", regfile[9]);
+		$display("R10 = %x", regfile[10]);
+		$display("R11 = %x", regfile[11]);
+		$display("R12 = %x", regfile[12]);
+		$display("R13 = %x", regfile[13]);
+		$display("R14 = %x", regfile[14]);
+		$display("R15 = %x", regfile[15]);
 	end
 
 endmodule
