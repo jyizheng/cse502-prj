@@ -10,6 +10,9 @@ module Core (
 	logic[5:0] fetch_skip;
 	logic[6:0] fetch_offset, decode_offset;
 
+	/* General-Purpose Registers */
+	logic[63:0] regfile[16];
+
 	function logic mtrr_is_mmio(logic[63:0] physaddr);
 		mtrr_is_mmio = ((physaddr > 640*1024 && physaddr < 1024*1024));
 	endfunction
@@ -34,6 +37,9 @@ module Core (
 			fetch_rip <= entry & ~63;
 			fetch_skip <= entry[5:0];
 			fetch_offset <= 0;
+
+			for (int i = 0; i < 16; i += 1)
+				regfile[i] <= 0;
 
 		end else begin // !bus.reset
 
@@ -73,6 +79,10 @@ module Core (
 	endfunction
 
 	logic[3:0] bytes_decoded_this_cycle;
+
+	/* Decoder module */
+	Decoder decoder(can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
+
 	always_comb begin
 		if (can_decode) begin : decode_block
 			// cse502 : following is an example of how to finish the simulation
@@ -92,27 +102,24 @@ module Core (
 
 		end
 
-	/* Decoder module */
-	Decoder decoder(can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
-
 	// cse502 : Use the following as a guide to print the Register File contents.
 	final begin
-		$display("RAX = %x", 0);
-		$display("RBX = %x", 0);
-		$display("RCX = %x", 0);
-		$display("RDX = %x", 0);
-		$display("RSI = %x", 0);
-		$display("RDI = %x", 0);
-		$display("RBP = %x", 0);
-		$display("RSP = %x", 0);
-		$display("R8 = %x", 0);
-		$display("R9 = %x", 0);
-		$display("R10 = %x", 0);
-		$display("R11 = %x", 0);
-		$display("R12 = %x", 0);
-		$display("R13 = %x", 0);
-		$display("R14 = %x", 0);
-		$display("R15 = %x", 0);
+		$display("RAX = %x", regfile[0]);
+		$display("RBX = %x", regfile[3]);
+		$display("RCX = %x", regfile[1]);
+		$display("RDX = %x", regfile[2]);
+		$display("RSI = %x", regfile[6]);
+		$display("RDI = %x", regfile[7]);
+		$display("RBP = %x", regfile[5]);
+		$display("RSP = %x", regfile[4]);
+		$display("R8  = %x", regfile[8]);
+		$display("R9  = %x", regfile[9]);
+		$display("R10 = %x", regfile[10]);
+		$display("R11 = %x", regfile[11]);
+		$display("R12 = %x", regfile[12]);
+		$display("R13 = %x", regfile[13]);
+		$display("R14 = %x", regfile[14]);
+		$display("R15 = %x", regfile[15]);
 	end
 endmodule
 

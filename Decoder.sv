@@ -746,7 +746,7 @@ module Decoder (
 		else if (modrm.v.rm == 3'b100) begin
 			/* SIB */
 			/* TODO */
-			$write("SIB note implemented");
+			$write("ERR SIB note implemented");
 		end
 		else begin
 			case (modrm.v.mod)
@@ -1005,7 +1005,7 @@ module Decoder (
 		decode_output = 0;
 	endfunction
 	/* verilator lint_on UNUSED */
-`endif
+`endif /* DECODER_OUTPUT */
 
 	/* FIXME: remove this */
 	/* verilator lint_off UNUSED */
@@ -1162,6 +1162,7 @@ module Decoder (
 					next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
 				end
 
+				`ifdef DECODER_OUTPUT
 				/* output */
 				$write("(rip %x [%d]):", rip, bytes_decoded);
 				for (int i = 0; i[3:0] < bytes_decoded; i += 1) begin
@@ -1169,6 +1170,7 @@ module Decoder (
 				end
 				$write("\n\t");
 				decode_output(prefix, rex, opcode, modrm, sib, disp, imme);
+				`endif
 				decode_one(prefix, rex, opcode, modrm, sib, disp, imme);
 
 				/* decoding */
@@ -1187,7 +1189,6 @@ module Decoder (
 			bytes_decoded = 0;
 		end
 	end
-
 
 endmodule
 
