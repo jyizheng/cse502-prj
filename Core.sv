@@ -12,7 +12,7 @@ module Core (
 
 	/* General-Purpose Registers */
 	logic clk;
-	logic[15:0][63:0] regfile;
+	//logic[15:0][63:0] regfile;
 
 	assign clk = bus.clk;
 
@@ -41,7 +41,7 @@ module Core (
 			fetch_skip <= entry[5:0];
 			fetch_offset <= 0;
 
-			regfile <= 0;
+			//regfile <= 0;
 
 		end else begin // !bus.reset
 
@@ -105,24 +105,24 @@ module Core (
 		end
 
 	// cse502 : Use the following as a guide to print the Register File contents.
-	final begin
-		$display("RAX = %x", regfile[0]);
-		$display("RBX = %x", regfile[3]);
-		$display("RCX = %x", regfile[1]);
-		$display("RDX = %x", regfile[2]);
-		$display("RSI = %x", regfile[6]);
-		$display("RDI = %x", regfile[7]);
-		$display("RBP = %x", regfile[5]);
-		$display("RSP = %x", regfile[4]);
-		$display("R8  = %x", regfile[8]);
-		$display("R9  = %x", regfile[9]);
-		$display("R10 = %x", regfile[10]);
-		$display("R11 = %x", regfile[11]);
-		$display("R12 = %x", regfile[12]);
-		$display("R13 = %x", regfile[13]);
-		$display("R14 = %x", regfile[14]);
-		$display("R15 = %x", regfile[15]);
-	end
+	//final begin
+		//$display("RAX = %x", regfile[0]);
+		//$display("RBX = %x", regfile[3]);
+		//$display("RCX = %x", regfile[1]);
+		//$display("RDX = %x", regfile[2]);
+		//$display("RSI = %x", regfile[6]);
+		//$display("RDI = %x", regfile[7]);
+		//$display("RBP = %x", regfile[5]);
+		//$display("RSP = %x", regfile[4]);
+		//$display("R8  = %x", regfile[8]);
+		//$display("R9  = %x", regfile[9]);
+		//$display("R10 = %x", regfile[10]);
+		//$display("R11 = %x", regfile[11]);
+		//$display("R12 = %x", regfile[12]);
+		//$display("R13 = %x", regfile[13]);
+		//$display("R14 = %x", regfile[14]);
+		//$display("R15 = %x", regfile[15]);
+	//end
 endmodule
 
 /* vim: set ts=4 sw=0 tw=0 noet : */
