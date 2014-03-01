@@ -967,7 +967,21 @@ module Decoder (
 		casez (opcode)
 			/* one-byte opcodes */
 			/* 00 - 07 */
-			10'b00_0000_0???: $write(" add");
+			10'h0: $write(" add");
+			10'h1: begin
+				$write(" [C]add");
+				if (effect_oprd_size == 64)
+					result = regfile[{rex.R,modrm.v.reg_op}] + regfile[{rex.B,modrm.v.rm}];
+				else
+					$write("ERR unsupported size (%d)", effect_oprd_size);
+				wb_reg = {rex.B,modrm.v.rm};
+			end
+			10'h2: $write(" add");
+			10'h3: $write(" add");
+			10'h4: $write(" add");
+			10'h5: $write(" add");
+			10'h6: $write(" add");
+			10'h7: $write(" add");
 
 			/* XXX: W2 */
 			10'h09: begin
@@ -1023,7 +1037,14 @@ module Decoder (
 			/* 84 - 85 */
 			10'b00_1000_010?: $write(" test");
 
-			10'h089: $write(" mov");
+			10'h089: begin
+				$write(" [C]mov");
+				if (effect_oprd_size == 64)
+					result = regfile[{rex.R,modrm.v.reg_op}];
+				else
+					$write("ERR unsupported op size");
+				wb_reg = { rex.B, modrm.v.rm };
+			end
 			10'h08B: $write(" mov");
 			10'h08D: $write(" lea");
 			10'h090: $write(" nop");
