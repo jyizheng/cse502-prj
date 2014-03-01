@@ -21,6 +21,8 @@ module Decoder (
 	logic[63:0] regfile[16];
 	logic[63:0] result;
 	logic[3:0] wb_reg;
+	logic imul_wb; /* FIXME: remove this */
+	logic[127:0] imul_result;
 
 	function logic[2:0] opcode_imme_size(opcode_t opcode);
 		/*
@@ -881,7 +883,14 @@ module Decoder (
 				endcase
 			10'b00_1000_0011:	/* 83 */
 				case (modrm.v.reg_op)
-					3'b000: $write(" add");
+					3'b000: begin
+						$write(" [C]add");
+						if (effect_oprd_size == 64)
+							result = regfile[{rex.B,modrm.v.rm}] + {56'b0,imme.value[7:0]};
+						else
+							$write("ERR unsupported op size");
+						wb_reg = { rex.B, modrm.v.rm };
+					end
 					3'b001: begin
 						$write(" [C]or");
 						if (effect_oprd_size == 64)
@@ -908,6 +917,19 @@ module Decoder (
 					3'b101: $write(" shr");
 					3'b110: $write(" Invalid ModRM opcode extension for %x", opcode);
 					3'b111: $write(" sar");
+				endcase
+			/* Group 3: F6, F7 */
+			10'h0F7:
+				case (modrm.v.reg_op)
+					3'b101: begin
+						$write(" [C]imul");
+						if (effect_oprd_size == 64) begin
+							imul_result = regfile[{rex.B,modrm.v.rm}] * regfile[`GPR_RAX];
+							imul_wb = 1;
+						end else
+							$write("ERR unsupported op size");
+					end
+					default: $write(" Invalid ModRM opcode extension for %x", opcode);
 				endcase
 			/* Group 5: FF */
 			10'h0FF:
@@ -949,7 +971,11 @@ module Decoder (
 	endfunction
 
 	always_ff @(posedge clk) begin
-		regfile[wb_reg] <= result;
+		if (imul_wb) begin
+			regfile[`GPR_RAX] <= imul_result[63:0];
+			regfile[`GPR_RDX] <= imul_result[127:64];
+		end else
+			regfile[wb_reg] <= result;
 	end
 
 	function logic decode_output(gene_pref_t prefix,
@@ -967,8 +993,8 @@ module Decoder (
 		casez (opcode)
 			/* one-byte opcodes */
 			/* 00 - 07 */
-			10'h0: $write(" add");
-			10'h1: begin
+			10'h000: $write(" add");
+			10'h001: begin
 				$write(" [C]add");
 				if (effect_oprd_size == 64)
 					result = regfile[{rex.R,modrm.v.reg_op}] + regfile[{rex.B,modrm.v.rm}];
@@ -976,12 +1002,12 @@ module Decoder (
 					$write("ERR unsupported size (%d)", effect_oprd_size);
 				wb_reg = {rex.B,modrm.v.rm};
 			end
-			10'h2: $write(" add");
-			10'h3: $write(" add");
-			10'h4: $write(" add");
-			10'h5: $write(" add");
-			10'h6: $write(" add");
-			10'h7: $write(" add");
+			10'h002: $write(" add");
+			10'h003: $write(" add");
+			10'h004: $write(" add");
+			10'h005: $write(" add");
+			10'h006: $write(" add");
+			10'h007: $write(" add");
 
 			/* XXX: W2 */
 			10'h09: begin
@@ -1062,7 +1088,6 @@ module Decoder (
 			10'h0E9: $write(" NEAR jmp");
 			10'h0EB: $write(" SHORT jmp");
 
-			/* two-byte opcodes */
 			10'h105: $write(" syscall");
 			10'h11f: $write(" nop");
 			10'h18?: begin
@@ -1077,11 +1102,21 @@ module Decoder (
 			10'h083: decode_modrm_opcode_output(opcode, modrm);
 			/* Group 2 */
 			10'h0C1: decode_modrm_opcode_output(opcode, modrm);
+			/* Group 3 */
+			10'h0F7: decode_modrm_opcode_output(opcode, modrm);
+			/* two-byte opcodes */
 			/* Group 5 */
 			10'h0FF: decode_modrm_opcode_output(opcode, modrm);
 			/* Group 11, XXX assume we only use mov of them */
 			10'h0C6: $write(" mov");
-			10'h0C7: $write(" mov");
+			10'h0C7: begin
+				$write(" [C]mov");
+				if (effect_oprd_size == 64)
+					result = {32'h0, imme.value[31:0]};
+				else
+					$write(" ERR unsupported size");
+				wb_reg = { rex.B,modrm.v.rm };
+			end
 			default: $write("Unknown opcode[%x]", opcode);
 		endcase
 
@@ -1146,6 +1181,8 @@ module Decoder (
 
 			rex = 0;
 			imme = 0;
+			imul_wb = 0;
+			imul_result = 0;
 
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
