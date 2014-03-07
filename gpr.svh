@@ -19,4 +19,12 @@
 `define GPR_R14	4'd14
 `define GPR_R15	4'd15
 
+/* Register types are used to indicate the size/bit-fields of GPRs */
+`define GPR_T_64	3'h1
+`define GPR_T_32L	3'h2
+`define GPR_T_16L	3'h3
+`define GPR_T_8L	3'h4
+`define GPR_T_8H	3'h5
+
+
 `endif
