@@ -3,7 +3,7 @@
 
 `define DECODER_OUTPUT 1
 
-`define DC_BUF_SZ	10
+`define DC_BUF_SZ	16
 `define DC_MAX_INSTR	3	// maximum number of instructions per cycle
 
 module Decoder (
@@ -11,7 +11,9 @@ module Decoder (
 	input can_decode,
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
-	output[3:0] bytes_decoded
+	input taken,	// If pipeline has taken the sent instruction
+	output[3:0] bytes_decoded,
+	output dc_instr out_dc_instr
 );
 
 	gene_pref_t prefix = 32'h0000_0000;
@@ -54,7 +56,16 @@ module Decoder (
 	endfunction
 
 	always @(posedge clk) begin
-		dc_buf[dc_buf_head] <= 0;
+		if (dc_buf_full())
+			$write("[DC] FATAL dc buffer full (head %d, tail %d)", dc_buf_head, dc_buf_tail);
+		else begin
+			dc_buf[dc_buf_head[3:0]].opcode <= opcode;
+			dc_buf[dc_buf_head[3:0]].modrm <= modrm;
+			dc_buf[dc_buf_head[3:0]].sib <= sib;
+			dc_buf[dc_buf_head[3:0]].disp <= disp;
+			dc_buf[dc_buf_head[3:0]].imme <= imme;
+			dc_buf_head <= (dc_buf_head + 1) % `DC_BUF_SZ;
+		end
 	end
 
 	/* End DC output buffer */

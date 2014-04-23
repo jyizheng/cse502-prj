@@ -2,7 +2,9 @@
 `include "gpr.svh"
 
 module Pipeline (
-	input clk
+	input clk,
+	input dc_instr dc_result,
+	output taken
 );
 	enum { stage_if, stage_id, stage_ex, stage_mem, stage_wb } stage;
 
