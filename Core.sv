@@ -10,9 +10,8 @@ module Core (
 	logic[5:0] fetch_skip;
 	logic[6:0] fetch_offset, decode_offset;
 
-	/* General-Purpose Registers */
+	/* XXX: verilator bug work around for passing bus.clk */
 	logic clk;
-	//logic[15:0][63:0] regfile;
 
 	assign clk = bus.clk;
 

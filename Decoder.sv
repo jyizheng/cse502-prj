@@ -3,7 +3,8 @@
 
 `define DECODER_OUTPUT 1
 
-`define GPR_RAX	4'd0
+`define DC_BUF_SZ	10
+`define DC_MAX_INSTR	3	// maximum number of instructions per cycle
 
 module Decoder (
 	input clk,
@@ -13,18 +14,52 @@ module Decoder (
 	output[3:0] bytes_decoded
 );
 
+	gene_pref_t prefix = 32'h0000_0000;
 	rex_t rex = 4'b0000;
+	opcode_t opcode = 0;
+	modrm_t modrm = 9'h00;
+	sib_t sib = 9'h00;
+	disp_t disp = 0;
 	imme_t imme = 0;
+
 	enum { ec_none, ec_invalid_op, ec_rex } error_code;
 	int effect_oprd_size = 0;
 	int effect_addr_size = 0;
-	logic[63:0] regfile[16];
-	logic[63:0] result;
-	logic[3:0] wb_reg;
-	logic imul_wb; /* FIXME: remove this */
-	logic[127:0] imul_result;
 
-	function logic[2:0] opcode_imme_size(opcode_t opcode);
+	/* Begin DC output buffer */
+	dc_instr dc_buf[`DC_BUF_SZ];
+	logic[7:0] dc_buf_head;
+	logic[7:0] dc_buf_tail;
+
+	initial begin
+		dc_buf_head = 0;
+		dc_buf_tail = 0;
+	end
+
+	function logic dc_buf_full();
+		logic[7:0] space;
+		if (dc_buf_head >= dc_buf_tail)
+			space = `DC_BUF_SZ - (dc_buf_head - dc_buf_tail) - 1;
+		else
+			space = `DC_BUF_SZ - (dc_buf_tail - dc_buf_head) - 1;
+
+		if (space >= `DC_MAX_INSTR)
+			dc_buf_full = 0;
+		else
+			dc_buf_full = 1;
+	endfunction
+
+	function logic dc_buf_empty();
+		dc_buf_empty = (dc_buf_head == dc_buf_tail) ? 1 : 0;
+	endfunction
+
+	always @(posedge clk) begin
+		dc_buf[dc_buf_head] <= 0;
+	end
+
+	/* End DC output buffer */
+
+	function logic[2:0] opcode_imme_size();
 		/*
 		 * 3'h0: no imme
 		 * 3'h1: b
@@ -86,7 +121,7 @@ module Decoder (
 		endcase
 	endfunction
 
-	function logic opcode_has_modrm(opcode_t opcode);
+	function logic opcode_has_modrm();
 		logic[0:255] onebyte_has_modrm = {
 			/*       0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f        */
 			/*       -------------------------------        */
@@ -141,7 +176,7 @@ module Decoder (
 		endcase
 	endfunction
 
-	function oprd_desc_t get_operand2_desc(opcode_t opcode, modrm_t modrm);
+	function oprd_desc_t get_operand2_desc();
 		oprd_desc_t[255:0] operand2_desc = {
 			/* 100 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -335,7 +370,7 @@ module Decoder (
 	endfunction
 
 
-	function oprd_desc_t get_operand1_desc(opcode_t opcode, modrm_t modrm);
+	function oprd_desc_t get_operand1_desc();
 		oprd_desc_t[255:0] operand1_desc = {
 			/* 100 */
 			{ `OPRD_SZ_0, `OPRD_T_NONE }, { `OPRD_SZ_0, `OPRD_T_NONE },
@@ -733,8 +768,7 @@ module Decoder (
 		output_disp = 0;
 	endfunction
 
-	function logic output_operand_E(oprd_desc_t oprd, gene_pref_t prefix, modrm_t modrm,
-		sib_t sib, disp_t disp, int efct_size);
+	function logic output_operand_E(oprd_desc_t oprd, int efct_size);
 		int actual_size = 0;
 		int addr_size = (prefix.grp[3] != 8'h67) ? 64 : 32;
 		rex_t rex_override = rex;
@@ -793,7 +827,7 @@ module Decoder (
 		output_operand_E = 0;
 	endfunction
 
-	function logic output_operand_G(oprd_desc_t oprd, modrm_t modrm, int efct_size);
+	function logic output_operand_G(oprd_desc_t oprd, int efct_size);
 		int reg_size = 0;
 		case (oprd.size)
 			`OPRD_SZ_B: reg_size = 8;
@@ -808,7 +842,7 @@ module Decoder (
 		output_operand_G = 0;
 	endfunction
 
-	function logic output_operand_OP(oprd_desc_t oprd, gene_pref_t prefix, opcode_t opcode, modrm_t modrm);
+	function logic output_operand_OP(oprd_desc_t oprd);
 		int reg_size = 0;
 		rex_t rex_override = rex;
 
@@ -845,7 +879,7 @@ module Decoder (
 		output_operand_rAX = 0;
 	endfunction
 
-	function logic decode_modrm_opcode_output(opcode_t opcode, modrm_t modrm);
+	function logic decode_modrm_opcode_output();
 		assert(modrm.exist == 1)
 		else $error("Expecting ModRM for opcode %x", opcode);
 		casez (opcode)
@@ -867,12 +901,7 @@ module Decoder (
 				case (modrm.v.reg_op)
 					3'b000: $write(" add");
 					3'b001: begin
-						$write(" [C]or");
-						if (effect_oprd_size == 64)
-							result = regfile[{rex.B,modrm.v.rm}] | {32'b0,imme.value[31:0]};
-						else
-							$write("ERR unsupported op size");
-						wb_reg = { rex.B, modrm.v.rm };
+						$write(" or");
 					end
 					3'b010: $write(" adc");
 					3'b011: $write(" sbb");
@@ -884,20 +913,10 @@ module Decoder (
 			10'b00_1000_0011:	/* 83 */
 				case (modrm.v.reg_op)
 					3'b000: begin
-						$write(" [C]add");
-						if (effect_oprd_size == 64)
-							result = regfile[{rex.B,modrm.v.rm}] + {56'b0,imme.value[7:0]};
-						else
-							$write("ERR unsupported op size");
-						wb_reg = { rex.B, modrm.v.rm };
+						$write(" add");
 					end
 					3'b001: begin
-						$write(" [C]or");
-						if (effect_oprd_size == 64)
-							result = regfile[{rex.B,modrm.v.rm}] | {56'b0,imme.value[7:0]};
-						else
-							$write("ERR unsupported op size");
-						wb_reg = { rex.B, modrm.v.rm };
+						$write(" or");
 					end
 					3'b010: $write(" adc");
 					3'b011: $write(" sbb");
@@ -922,12 +941,7 @@ module Decoder (
 			10'h0F7:
 				case (modrm.v.reg_op)
 					3'b101: begin
-						$write(" [C]imul");
-						if (effect_oprd_size == 64) begin
-							imul_result = regfile[{rex.B,modrm.v.rm}] * regfile[`GPR_RAX];
-							imul_wb = 1;
-						end else
-							$write("ERR unsupported op size");
+						$write(" imul");
 					end
 					default: $write(" Invalid ModRM opcode extension for %x", opcode);
 				endcase
@@ -970,16 +984,7 @@ module Decoder (
 		output_condition = 0;
 	endfunction
 
-	always_ff @(posedge clk) begin
-		if (imul_wb) begin
-			regfile[`GPR_RAX] <= imul_result[63:0];
-			regfile[`GPR_RDX] <= imul_result[127:64];
-		end else
-			regfile[wb_reg] <= result;
-	end
-
-	function logic decode_output(gene_pref_t prefix,
-		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp);
+	function logic decode_output();
 
 		oprd_desc_t oprd1;
 		oprd_desc_t oprd2;
@@ -995,12 +1000,7 @@ module Decoder (
 			/* 00 - 07 */
 			10'h000: $write(" add");
 			10'h001: begin
-				$write(" [C]add");
-				if (effect_oprd_size == 64)
-					result = regfile[{rex.R,modrm.v.reg_op}] + regfile[{rex.B,modrm.v.rm}];
-				else
-					$write("ERR unsupported size (%d)", effect_oprd_size);
-				wb_reg = {rex.B,modrm.v.rm};
+				$write(" add");
 			end
 			10'h002: $write(" add");
 			10'h003: $write(" add");
@@ -1011,26 +1011,12 @@ module Decoder (
 
 			/* XXX: W2 */
 			10'h09: begin
-				$write(" [C]or");
-				if (effect_oprd_size == 64)
-					result = regfile[{rex.R,modrm.v.reg_op}] | regfile[{rex.B,modrm.v.rm}];
-				else
-					$write("ERR unsupported size (%d)", effect_oprd_size);
-				wb_reg = {rex.B,modrm.v.rm};
+				$write(" or");
 			end
 
 			/* XXX: W2 */
 			10'h0D: begin
-				$write(" [C]or");
-				if (effect_oprd_size == 64)
-					result = regfile[0] | imme.value;
-				else if (effect_oprd_size == 32)
-					result[31:0] = regfile[0][31:0] | imme.value[31:0];
-				else if (effect_oprd_size == 16)
-					result[15:0] = regfile[0][15:0] | imme.value[15:0];
-				else
-					$write("ERR unsupported size (%d)", effect_oprd_size);
-				wb_reg = 0;
+				$write(" or");
 			end
 
 			/* 20 - 27 */
@@ -1064,24 +1050,14 @@ module Decoder (
 			10'b00_1000_010?: $write(" test");
 
 			10'h089: begin
-				$write(" [C]mov");
-				if (effect_oprd_size == 64)
-					result = regfile[{rex.R,modrm.v.reg_op}];
-				else
-					$write("ERR unsupported op size");
-				wb_reg = { rex.B, modrm.v.rm };
+				$write(" mov");
 			end
 			10'h08B: $write(" mov");
 			10'h08D: $write(" lea");
 			10'h090: $write(" nop");
 			/* XXX: W2 */
 			10'h0B?: begin
-				$write(" [C]movabs");
-				if (effect_oprd_size == 64)
-					result = imme.value;
-				else
-					$write(" ERR unsupported size");
-				wb_reg = { rex.B, opcode.opcode[2:0] };
+				$write(" movabs");
 			end
 			10'h0C3: $write(" NEAR ret");
 			10'h0E8: $write(" NEAR call");
@@ -1098,56 +1074,51 @@ module Decoder (
 
 			/* --- Special group w/ ModR/M opcode --- */
 			/* Group 1 */
-			10'h081: decode_modrm_opcode_output(opcode, modrm);
-			10'h083: decode_modrm_opcode_output(opcode, modrm);
+			10'h081: decode_modrm_opcode_output();
+			10'h083: decode_modrm_opcode_output();
 			/* Group 2 */
-			10'h0C1: decode_modrm_opcode_output(opcode, modrm);
+			10'h0C1: decode_modrm_opcode_output();
 			/* Group 3 */
-			10'h0F7: decode_modrm_opcode_output(opcode, modrm);
+			10'h0F7: decode_modrm_opcode_output();
 			/* two-byte opcodes */
 			/* Group 5 */
-			10'h0FF: decode_modrm_opcode_output(opcode, modrm);
+			10'h0FF: decode_modrm_opcode_output();
 			/* Group 11, XXX assume we only use mov of them */
 			10'h0C6: $write(" mov");
 			10'h0C7: begin
-				$write(" [C]mov");
-				if (effect_oprd_size == 64)
-					result = {32'h0, imme.value[31:0]};
-				else
-					$write(" ERR unsupported size");
-				wb_reg = { rex.B,modrm.v.rm };
+				$write(" mov");
 			end
 			default: $write("Unknown opcode[%x]", opcode);
 		endcase
 
 		/* Operand, display 2nd operand first */
-		oprd2 = get_operand2_desc(opcode, modrm);
+		oprd2 = get_operand2_desc();
 		if (oprd2 != 0) begin
 			$write("\t");
 			case (oprd2.t)
-				`OPRD_T_E: output_operand_E(oprd2, prefix, modrm, sib, disp, effect_oprd_size);
-				`OPRD_T_G: output_operand_G(oprd2, modrm, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd2, effect_oprd_size);
+				`OPRD_T_G: output_operand_G(oprd2, effect_oprd_size);
 				`OPRD_T_I: output_operand_I(effect_oprd_size);
 				`OPRD_T_J: output_operand_J(effect_addr_size);
-				`OPRD_T_M: output_operand_E(oprd2, prefix, modrm, sib, disp, effect_oprd_size);
+				`OPRD_T_M: output_operand_E(oprd2, effect_oprd_size);
 				`OPRD_T_X: $write("%%ds(%%rsi)");
 				`OPRD_T_DX: $write("(%%dx)");
-				`OPRD_T_OP: output_operand_OP(oprd2, prefix, opcode, modrm);
+				`OPRD_T_OP: output_operand_OP(oprd2);
 				`OPRD_T_rAX: output_operand_rAX();
 				default: $write("Unknown operand type (%x)", oprd2.t);
 			endcase
 		end
 
-		oprd1 = get_operand1_desc(opcode, modrm);
+		oprd1 = get_operand1_desc();
 
 		if (oprd1 != 0) begin
 			$write(", ");
 			case (oprd1.t)
-				`OPRD_T_E: output_operand_E(oprd1, prefix, modrm, sib, disp, effect_oprd_size);
-				`OPRD_T_G: output_operand_G(oprd1, modrm, effect_oprd_size);
+				`OPRD_T_E: output_operand_E(oprd1, effect_oprd_size);
+				`OPRD_T_G: output_operand_G(oprd1, effect_oprd_size);
 				`OPRD_T_Y: $write("%%es(%%rdi)");
 				`OPRD_T_DX: $write("(%%dx)");
-				`OPRD_T_OP: output_operand_OP(oprd1, prefix, opcode, modrm);
+				`OPRD_T_OP: output_operand_OP(oprd1);
 				`OPRD_T_rAX: output_operand_rAX();
 				default: $write("Unknown operand type (%x)", oprd1.t);
 			endcase
@@ -1160,8 +1131,7 @@ module Decoder (
 
 	/* FIXME: remove this */
 	/* verilator lint_off UNUSED */
-	function logic decode_one(gene_pref_t prefix,
-		opcode_t opcode, modrm_t modrm, sib_t sib, disp_t disp);
+	function logic decode_one();
 		//$display("%x %x %x %x %x %x %x", prefix, rex, opcode, modrm, sib, disp, imme);
 		decode_one = 0;
 
@@ -1169,20 +1139,18 @@ module Decoder (
 	/* verilator lint_on UNUSED */
 
 	always_comb begin
-		if (can_decode) begin : decoder
-			gene_pref_t prefix = 32'h0000_0000;
-			opcode_t opcode = 0;
-			modrm_t modrm = 9'h00;
-			sib_t sib = 9'h00;
-			disp_t disp = 0;
+		if (can_decode && !dc_buf_full()) begin : decoder
 
 			logic[7:0] next_byte;
 			logic rex_met = 1'b0;
 
-			rex = 0;
+			prefix = 32'h0000_0000;
+			rex = 4'b0000;
+			opcode = 0;
+			modrm = 9'h00;
+			sib = 9'h00;
+			disp = 0;
 			imme = 0;
-			imul_wb = 0;
-			imul_result = 0;
 
 			// cse502 : Decoder here
 			// remove the following line. It is only here to allow successful compilation in the absence of your code.
@@ -1265,7 +1233,7 @@ module Decoder (
 				opcode.opcode = next_byte;
 				bytes_decoded += 1;
 				next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
-				modrm.exist = opcode_has_modrm(opcode);
+				modrm.exist = opcode_has_modrm();
 
 				if (error_code != ec_none)
 					$finish;
@@ -1300,7 +1268,7 @@ module Decoder (
 				end
 
 				/* Immediate */
-				imme.size[2:0] = opcode_imme_size(opcode);
+				imme.size[2:0] = opcode_imme_size();
 				if (imme.size[2:0] == 5) begin
 					imme.size = (rex.W == 1) ? 4 :
 						((prefix.grp[2] == 0) ? 4 : 2);
@@ -1323,9 +1291,9 @@ module Decoder (
 					$write(" %x", decode_bytes[i * 8 +: 8]);
 				end
 				$write("\n\t");
-				decode_output(prefix, opcode, modrm, sib, disp);
+				decode_output();
 				`endif
-				decode_one(prefix, opcode, modrm, sib, disp);
+				decode_one();
 
 				/* decoding */
 			end /* error_code != ec_rex */
@@ -1342,25 +1310,6 @@ module Decoder (
 		else begin
 			bytes_decoded = 0;
 		end
-	end
-
-	final begin
-		$display("RAX = %x", regfile[0]);
-		$display("RBX = %x", regfile[3]);
-		$display("RCX = %x", regfile[1]);
-		$display("RDX = %x", regfile[2]);
-		$display("RSI = %x", regfile[6]);
-		$display("RDI = %x", regfile[7]);
-		$display("RBP = %x", regfile[5]);
-		$display("RSP = %x", regfile[4]);
-		$display("R8  = %x", regfile[8]);
-		$display("R9  = %x", regfile[9]);
-		$display("R10 = %x", regfile[10]);
-		$display("R11 = %x", regfile[11]);
-		$display("R12 = %x", regfile[12]);
-		$display("R13 = %x", regfile[13]);
-		$display("R14 = %x", regfile[14]);
-		$display("R15 = %x", regfile[15]);
 	end
 
 endmodule

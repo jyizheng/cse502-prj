@@ -62,6 +62,14 @@ typedef struct packed {
 	logic[3:0] size;
 } imme_t;
 
+typedef struct packed {
+	opcode_t opcode;
+	modrm_t modrm;
+	sib_t sib;
+	disp_t disp;
+	imme_t imme;
+} dc_instr;
+
 `define OPRD_T_NONE 5'h00
 `define OPRD_T_E 5'h01
 `define OPRD_T_G 5'h02
