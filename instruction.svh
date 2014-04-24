@@ -2,6 +2,9 @@
 
 `ifndef _INSTRUCTION_SVH_
 `define _INSTRUCTION_SVH_ 1
+
+`include "operand.svh"
+
 /* Typedefs */
 typedef struct packed {
 	logic[3:0][7:0] grp;
@@ -64,33 +67,32 @@ typedef struct packed {
 
 typedef struct packed {
 	opcode_t opcode;
-	modrm_t modrm;
-	sib_t sib;
-	disp_t disp;
-	imme_t imme;
+	oprd_t oprd1;
+	oprd_t oprd2;
+	oprd_t oprd3;
 } micro_op_t;
 
-`define OPRD_T_NONE 5'h00
-`define OPRD_T_E 5'h01
-`define OPRD_T_G 5'h02
-`define OPRD_T_I 5'h03
-`define OPRD_T_J 5'h04
-`define OPRD_T_F 5'h05
-`define OPRD_T_M 5'h06
-`define OPRD_T_X 5'h07
-`define OPRD_T_Y 5'h08
-`define OPRD_T_DX 5'h1D
-`define OPRD_T_rAX 5'h1E /* AX, EAX, RAX */
-`define OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
+`define DC_OPRD_T_NONE 5'h00
+`define DC_OPRD_T_E 5'h01
+`define DC_OPRD_T_G 5'h02
+`define DC_OPRD_T_I 5'h03
+`define DC_OPRD_T_J 5'h04
+`define DC_OPRD_T_F 5'h05
+`define DC_OPRD_T_M 5'h06
+`define DC_OPRD_T_X 5'h07
+`define DC_OPRD_T_Y 5'h08
+`define DC_OPRD_T_DX 5'h1D
+`define DC_OPRD_T_rAX 5'h1E /* AX, EAX, RAX */
+`define DC_OPRD_T_OP 5'h1F /* encoded in opcode[2:0] */
 
-`define OPRD_SZ_0 3'h0
-`define OPRD_SZ_B 3'h1	/* BYTE */
-`define OPRD_SZ_W 3'h2	/* WORD */
-`define OPRD_SZ_D 3'h3	/* DWORD */
-`define OPRD_SZ_Q 3'h4	/* QWORD */
-`define OPRD_SZ_Z 3'h5
-`define OPRD_SZ_V 3'h6
-`define OPRD_SZ_AV 3'h7	/* Ev for address */
+`define DC_OPRD_SZ_0 3'h0
+`define DC_OPRD_SZ_B 3'h1	/* BYTE */
+`define DC_OPRD_SZ_W 3'h2	/* WORD */
+`define DC_OPRD_SZ_D 3'h3	/* DWORD */
+`define DC_OPRD_SZ_Q 3'h4	/* QWORD */
+`define DC_OPRD_SZ_Z 3'h5
+`define DC_OPRD_SZ_V 3'h6
+`define DC_OPRD_SZ_AV 3'h7	/* Ev for address */
 
 typedef struct packed {
 	/*
