@@ -13,7 +13,7 @@ module Decoder (
 	input[0:15*8-1] decode_bytes,
 	input taken,	// If pipeline has taken the sent instruction
 	output[3:0] bytes_decoded,
-	output dc_instr out_dc_instr
+	output micro_op_t out_dc_instr
 );
 
 	gene_pref_t prefix = 32'h0000_0000;
@@ -29,7 +29,7 @@ module Decoder (
 	int effect_addr_size = 0;
 
 	/* Begin DC output buffer */
-	dc_instr dc_buf[`DC_BUF_SZ];
+	micro_op_t dc_buf[`DC_BUF_SZ];
 	logic[7:0] dc_buf_head;
 	logic[7:0] dc_buf_tail;
 
@@ -56,15 +56,21 @@ module Decoder (
 	endfunction
 
 	always @(posedge clk) begin
-		if (dc_buf_full())
-			$write("[DC] FATAL dc buffer full (head %d, tail %d)", dc_buf_head, dc_buf_tail);
-		else begin
+		/* Put decoded instruction into buffer */
+		if (!dc_buf_full()) begin
 			dc_buf[dc_buf_head[3:0]].opcode <= opcode;
 			dc_buf[dc_buf_head[3:0]].modrm <= modrm;
 			dc_buf[dc_buf_head[3:0]].sib <= sib;
 			dc_buf[dc_buf_head[3:0]].disp <= disp;
 			dc_buf[dc_buf_head[3:0]].imme <= imme;
 			dc_buf_head <= (dc_buf_head + 1) % `DC_BUF_SZ;
+		end
+
+		if (taken)	begin
+			if (dc_buf_empty())
+				$write("[DC] FATAL dc buffer empty (head %d, tail %d)", dc_buf_head, dc_buf_tail);
+
+			dc_buf_tail <= (dc_buf_tail + 1) % `DC_BUF_SZ;
 		end
 	end
 

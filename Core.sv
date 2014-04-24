@@ -81,17 +81,7 @@ module Core (
 
 	logic[3:0] bytes_decoded_this_cycle;
 
-	/* Decoder module */
-	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, bytes_decoded_this_cycle);
-
-	always_comb begin
-		if (can_decode) begin : decode_block
-			// cse502 : following is an example of how to finish the simulation
-			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
-		end
-	end
-
-	always @ (posedge bus.clk)
+	always @ (posedge bus.clk) begin
 		if (bus.reset) begin
 
 			decode_offset <= 0;
@@ -102,6 +92,27 @@ module Core (
 			decode_offset <= decode_offset + { 3'b0, bytes_decoded_this_cycle };
 
 		end
+	end
+
+	/* Decode stage */
+	logic dc_taken = 0;
+	micro_op_t dc_uop;
+	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, dc_taken, bytes_decoded_this_cycle, dc_uop);
+
+	/* Data Fetch stage */
+
+	/* EXE stage */
+
+	/* MEM stage */
+
+	/* WB stage */
+
+	always_comb begin
+		if (can_decode) begin : decode_block
+			// cse502 : following is an example of how to finish the simulation
+			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
+		end
+	end
 
 	// cse502 : Use the following as a guide to print the Register File contents.
 	//final begin

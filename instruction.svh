@@ -68,7 +68,7 @@ typedef struct packed {
 	sib_t sib;
 	disp_t disp;
 	imme_t imme;
-} dc_instr;
+} micro_op_t;
 
 `define OPRD_T_NONE 5'h00
 `define OPRD_T_E 5'h01

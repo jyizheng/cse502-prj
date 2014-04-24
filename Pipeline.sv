@@ -3,8 +3,18 @@
 
 module Pipeline (
 	input clk,
+
+	/* For IF */
+
+	/* For DC */
 	input dc_instr dc_result,
 	output taken
+	
+	/* For DF */
+
+	/* For EXE */
+
+	/* For WB */
 );
 	enum { stage_if, stage_id, stage_ex, stage_mem, stage_wb } stage;
 
@@ -16,6 +26,7 @@ module Pipeline (
 	end
 
 	always_ff @(posedge clk) begin
+		taken <= 1;
 	end
 endmodule
 
