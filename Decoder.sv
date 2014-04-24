@@ -1184,6 +1184,62 @@ module Decoder (
 		endcase
 	endfunction
 
+	/* For immediate, we need to extend to effective operand size */
+	function logic decode_operand_I(int oprd_no);
+		int imme_size = 0;
+		imme_size[3:0] = imme.size;
+		imme_size = imme_size * 8;
+
+		dc_oprd[oprd_no].t = `OPRD_T_IMME;
+
+		if (imme_size == effect_oprd_size)
+			dc_oprd[oprd_no].value = imme.value;
+		else if (imme_size < effect_oprd_size) begin
+			logic[63:0] imme_value;
+			imme_value = imme.value[63:0];
+			for (int i = imme_size; i < effect_oprd_size; i += 1)
+				imme_value[i] = imme.value[imme_size-1];
+			dc_oprd[oprd_no].value = imme_value;
+		end
+		else if (imme_size > effect_oprd_size)
+			$write("Immediate size larger than effective?? (%d > %d)", imme_size, effect_oprd_size);
+
+		decode_operand_I = 0;
+	endfunction
+
+
+	/* For relative offset, we need to extend to effective address size */
+	function logic decode_operand_J(int oprd_no);
+		logic[7:0] rel_addr_size = imme.size * 8;
+
+		dc_oprd[oprd_no].t = `OPRD_T_IMME;
+
+		dc_oprd[oprd_no].value = imme.value;
+		for (int i = rel_addr_size; i < effect_addr_size; i += 1)
+			dc_oprd[oprd_no].value[i] = imme.value[rel_addr_size-1];
+
+		decode_operand_J = 0;
+	endfunction
+
+	function logic decode_operand_G(oprd_desc_t oprd, int oprd_no);
+		int reg_size = 0;
+		case (oprd.size)
+			`DC_OPRD_SZ_B: reg_size = 8;
+			`DC_OPRD_SZ_W: reg_size = 16;
+			`DC_OPRD_SZ_Z: reg_size = (rex.W == 1) ? 32 :
+				((effect_oprd_size == 32) ? 32 : 16);
+			`DC_OPRD_SZ_V: reg_size = (rex.W == 1) ? 64 :
+				((effect_oprd_size == 32) ? 32 : 16);
+			default: $write("[DC] ERR Invalid oprd1 size %x", oprd.size);
+		endcase
+
+		assert(reg_size == 64);
+
+		dc_oprd[oprd_no].t = `OPRD_T_REG;
+		dc_oprd[oprd_no].r = {1'b0, rex.R, modrm.v.reg_op};
+
+		decode_operand_G = 0;
+	endfunction
 
 	function logic decode_operand_E(oprd_desc_t oprd, int oprd_no);
 		int actual_size = 0;
@@ -1208,7 +1264,7 @@ module Decoder (
 		if (modrm.v.mod == 2'b11) begin
 			/* Reg */
 			dc_oprd[oprd_no].t = `OPRD_T_REG;
-			dc_oprd[oprd_no].r = {0, rex.B, modrm.v.rm};
+			dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 		end
 		else if (modrm.v.rm == 3'b100) begin
 			/* SIB */
@@ -1226,21 +1282,53 @@ module Decoder (
 					else begin
 						/* here we need to pretend rex is not 0 to force 64-bit mode */
 						dc_oprd[oprd_no].t = `OPRD_T_MEM;
-						dc_oprd[oprd_no].r = {0, rex.B, modrm.v.rm};
+						dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 					end
 				end
 				2'b01: begin
 					dc_oprd[oprd_no].ext = decode_disp();
-					dc_oprd[oprd_no].r = {0, rex.B, modrm.v.rm};
+					dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 				end
 				2'b10: begin
 					dc_oprd[oprd_no].ext = decode_disp();
-					dc_oprd[oprd_no].r = {0, rex.B, modrm.v.rm};
+					dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 				end
 				default: $write("[DC] ERR Invalid ModR/M.mod (%x)", modrm.v.mod);
 			endcase
 		end
 		decode_operand_E = 0;
+	endfunction
+
+	function logic decode_operand_OP(oprd_desc_t oprd, int oprd_no);
+		int reg_size = 0;
+		rex_t rex_override = rex;
+
+		/* push/pop instruction */
+		if (opcode.escape == 0 && opcode.opcode[7:4] == 4'h5) begin
+			if (rex.W == 1 || prefix.grp[2] != 8'h66)
+				rex_override.W = 1;
+		end
+
+		case (oprd.size)
+			`DC_OPRD_SZ_B: reg_size = 8;
+			`DC_OPRD_SZ_W: reg_size = 16;
+			`DC_OPRD_SZ_Z: reg_size = (rex_override.W == 1) ? 32 :
+				((prefix.grp[2] != 8'h66) ? 32 : 16);
+			`DC_OPRD_SZ_V: reg_size = (rex_override.W == 1) ? 64 :
+				((prefix.grp[2] != 8'h66) ? 32 : 16);
+			default: $write("Invalid oprd1 size %x", oprd.size);
+		endcase
+
+		assert(reg_size == 64);
+		dc_oprd[oprd_no].t = `OPRD_T_REG;
+		dc_oprd[oprd_no].r = {1'b0, rex.B, opcode.opcode[2:0]};
+		decode_operand_OP = 0;
+	endfunction
+
+	function logic decode_operand_rAX(int oprd_no);
+		dc_oprd[oprd_no].t = `OPRD_T_REG;
+		dc_oprd[oprd_no].r = {1'b0, rex.B, `GPR_RAX};
+		decode_operand_rAX = 0;
 	endfunction
 
 
@@ -1265,12 +1353,12 @@ module Decoder (
 			case (oprd_dsc1.t)
 				`DC_OPRD_T_E: decode_operand_E(oprd_dsc1, 0);
 				`DC_OPRD_T_G: decode_operand_G(oprd_dsc1, 0);
-				`DC_OPRD_T_I: decode_operand_I(oprd_dsc1, 0);
-				`DC_OPRD_T_J: decode_operand_J(oprd_dsc1, 0);
+				`DC_OPRD_T_I: decode_operand_I(0);
+				`DC_OPRD_T_J: decode_operand_J(0);
 				`DC_OPRD_T_M: decode_operand_E(oprd_dsc1, 0);
 				//`DC_OPRD_T_X: $write("%%ds(%%rsi)");
 				//`DC_OPRD_T_DX: $write("(%%dx)");
-				`DC_OPRD_T_OP: decode_operand_OP(0);
+				`DC_OPRD_T_OP: decode_operand_OP(oprd_dsc1, 0);
 				`DC_OPRD_T_rAX: decode_operand_rAX(0);
 				default: $write("[DC] ERR: Unknown operand type (%x)", oprd_dsc1.t);
 			endcase
