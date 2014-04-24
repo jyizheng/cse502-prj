@@ -2,6 +2,7 @@
 `include "gpr.svh"
 
 `define DECODER_OUTPUT 1
+`define DECODER_DEBUG 1
 
 `define DC_BUF_SZ	16
 `define DC_MAX_INSTR	3	// maximum number of instructions per cycle
@@ -1341,13 +1342,16 @@ module Decoder (
 			((prefix.grp[2] == 0) ? 32 : 16);
 		effect_addr_size = (prefix.grp[3] == 0) ? 64 : 32;
 
+`ifdef DECODER_DEBUG
 		if (effect_oprd_size != 64)
-			$write("[DC] ERR operand size is not 64 (%d)", effect_oprd_size);
+			$display("[DC] DEBUG operand size is not 64 (%d)", effect_oprd_size);
 		if (effect_addr_size != 64)
-			$write("[DC] ERR operand addr size is not 64 (%d)", effect_addr_size);
+			$display("[DC] DEBUG operand addr size is not 64 (%d)", effect_addr_size);
+`endif
 
 		/* FIXME: Need to handle special opcodes */
 
+		/* Parse operands */
 		oprd_dsc1 = get_operand1_desc();
 		if (oprd_dsc1.t != `DC_OPRD_T_NONE) begin
 			case (oprd_dsc1.t)
@@ -1363,6 +1367,28 @@ module Decoder (
 				default: $write("[DC] ERR: Unknown operand type (%x)", oprd_dsc1.t);
 			endcase
 		end
+
+		oprd_dsc2 = get_operand2_desc();
+		if (oprd_dsc2.t != `DC_OPRD_T_NONE) begin
+			case (oprd_dsc2.t)
+				`DC_OPRD_T_E: decode_operand_E(oprd_dsc2, 1);
+				`DC_OPRD_T_G: decode_operand_G(oprd_dsc2, 1);
+				`DC_OPRD_T_I: decode_operand_I(1);
+				`DC_OPRD_T_J: decode_operand_J(1);
+				`DC_OPRD_T_M: decode_operand_E(oprd_dsc2, 1);
+				//`DC_OPRD_T_X: $write("%%ds(%%rsi)");
+				//`DC_OPRD_T_DX: $write("(%%dx)");
+				`DC_OPRD_T_OP: decode_operand_OP(oprd_dsc2, 1);
+				`DC_OPRD_T_rAX: decode_operand_rAX(1);
+				default: $write("[DC] ERR: Unknown operand type (%x)", oprd_dsc1.t);
+			endcase
+		end
+
+		/* FIXME: Operand 3? */
+
+`ifdef DECODER_DEBUG
+		$display("[DC] DEBUG oprd1 %h oprd2 %h", dc_oprd[0], dc_oprd[1]);
+`endif
 
 		decode_one = 0;
 
@@ -1522,7 +1548,7 @@ module Decoder (
 				/* decode */
 				decode_one();
 
-				`ifdef DECODER_OUTPUT
+`ifdef DECODER_OUTPUT
 				/* output */
 				$write("(rip %x [%d]):", rip, bytes_decoded);
 				for (int i = 0; i[3:0] < bytes_decoded; i += 1) begin
@@ -1530,7 +1556,7 @@ module Decoder (
 				end
 				$write("\n\t");
 				decode_output();
-				`endif
+`endif
 
 			end /* error_code != ec_rex */
 
