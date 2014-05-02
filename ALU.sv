@@ -4,9 +4,9 @@ module ALU (
 	input clk,
 	input opcode_t opcode,
 	input[63:0] operand1,
-	input[63,0] operand2,
-	output[63,0] result,
-	output[63,0] flags
+	input[63:0] operand2,
+	output[127:0] result,
+	output[63:0] flags
 );
 	logic[127:0] tmp_result;
 

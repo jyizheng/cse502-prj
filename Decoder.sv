@@ -14,14 +14,15 @@ module Decoder (
 	input[0:15*8-1] decode_bytes,
 	input taken,	// If pipeline has taken the sent instruction
 	output[3:0] bytes_decoded,
-	output micro_op_t out_dc_instr
+	output micro_op_t out_dc_instr,
+	output dc_df
 );
 
 	gene_pref_t prefix = 32'h0000_0000;
 	rex_t rex = 4'b0000;
 	opcode_t opcode = 0;
 	modrm_t modrm = 9'h00;
-	sib_t sib = 9'h00;
+	//sib_t sib = 9'h00;
 	disp_t disp = 0;
 	imme_t imme = 0;
 
@@ -68,11 +69,21 @@ module Decoder (
 			dc_buf_head <= (dc_buf_head + 1) % `DC_BUF_SZ;
 		end
 
+		/* previous uop taken by df stage */
 		if (taken)	begin
 			if (dc_buf_empty())
 				$write("[DC] FATAL dc buffer empty (head %d, tail %d)", dc_buf_head, dc_buf_tail);
 
 			dc_buf_tail <= (dc_buf_tail + 1) % `DC_BUF_SZ;
+		end
+
+		/* setup new output */
+		if (!dc_buf_empty()) begin
+			out_dc_instr <= dc_buf[dc_buf_tail[3:0]];
+			dc_df <= 1;
+		end
+		else begin
+			dc_df <= 0;
 		end
 	end
 
@@ -1405,7 +1416,7 @@ module Decoder (
 			rex = 4'b0000;
 			opcode = 0;
 			modrm = 9'h00;
-			sib = 9'h00;
+			//sib = 9'h00;
 			disp = 0;
 			imme = 0;
 
@@ -1508,8 +1519,9 @@ module Decoder (
 
 				/* SIB */
 				if (modrm.v.mod != 2'b11 && modrm.v.rm == 3'b100) begin
-					sib.exist = 1'b1;
-					sib[7:0] = next_byte;
+					//sib.exist = 1'b1;
+					//sib[7:0] = next_byte;
+					$display("[DC] ERR SIB met?");
 					bytes_decoded += 1;
 					next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
 				end

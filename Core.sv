@@ -1,4 +1,5 @@
 `include "instruction.svh"
+`include "operand.svh"
 
 module Core (
 	input[63:0] entry
@@ -94,17 +95,73 @@ module Core (
 		end
 	end
 
+	/* Data defines */
+	logic[63:0] regs[32:0];
+	logic[32:0] reg_occupies;
+
+	/* Data initialization */
+	initial begin
+		for (int i = 0; i < 32; i += 1)
+			regs[i] = 0;
+		reg_occupies = 0;
+	end
+
+	/* --------------------------------------------------------- */
 	/* Decode stage */
 	logic dc_taken = 0;
+	logic dc_df = 0;
 	micro_op_t dc_uop;
-	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, dc_taken, bytes_decoded_this_cycle, dc_uop);
+	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, dc_taken,
+		bytes_decoded_this_cycle, dc_uop, dc_df);
 
-	/* Data Fetch stage */
+	/* --------------------------------------------------------- */
+	/* Data Fetch & Schedule stage */
+	logic df_taken;
+	assign dc_taken = df_taken;
+	micro_op_t df_uop;
+	logic df_exe = 0;
 
+	/* check register conflict */
+	function logic df_reg_conflict(micro_op_t uop);
+		if (uop.oprd1.t == `OPRD_T_REG)
+			if (reg_occupies[uop.oprd1.r] != 0)
+				return 1;
+
+		if (uop.oprd2.t == `OPRD_T_REG)
+			if (reg_occupies[uop.oprd2.r] != 0)
+				return 1;
+
+		if (uop.oprd3.t == `OPRD_T_REG)
+			if (reg_occupies[uop.oprd3.r] != 0)
+				return 1;
+
+		return 0;
+	endfunction
+
+	function logic df_set_reg_conflict(micro_op_t uop);
+		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
+		if (uop.oprd1.t == `OPRD_T_REG)
+			reg_occupies[uop.oprd1.r] = 1;
+		return 0;
+	endfunction
+
+	always_comb begin
+		df_taken = 0;
+		if (dc_df == 1 && !df_reg_conflict(dc_uop)) begin
+			df_taken = 1;
+			df_uop = dc_uop;
+			df_set_reg_conflict(df_uop);
+		end
+	end
+
+	/* --------------------------------------------------------- */
 	/* EXE stage */
+	//ALU alu(clk, 
 
+	/* --------------------------------------------------------- */
 	/* MEM stage */
 
+	/* --------------------------------------------------------- */
 	/* WB stage */
 
 	always_comb begin
