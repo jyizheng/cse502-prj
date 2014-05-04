@@ -191,11 +191,28 @@ module Core (
 	logic exe_mem;
 	logic[127:0] exe_result;
 	logic[63:0] exe_flags;
+	logic[127:0] exe_result_tmp;
+	logic[63:0] exe_flags_tmp;
 	micro_op_t exe_uop;
 
 	ALU alu(clk, df_exe,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
-		exe_result, exe_flags, exe_mem);
+		exe_result_tmp, exe_flags_tmp, exe_mem);
+
+	always_ff @ (posedge bus.clk) begin
+		if (df_exe == 1) begin
+			exe_uop <= df_uop;
+			exe_mem <= 1;
+			exe_result <= exe_result_tmp;
+			exe_flags <= exe_flags_tmp;
+		end
+		else begin
+			exe_uop <= 0;
+			exe_mem <= 0;
+			exe_result <= 0;
+			exe_flags <= 0;
+		end
+	end
 
 	/* --------------------------------------------------------- */
 	/* MEM stage */
@@ -204,11 +221,35 @@ module Core (
 	logic[63:0] mem_flags;
 	micro_op_t mem_uop;
 
+	always_ff @ (posedge bus.clk) begin
+		if (exe_mem == 1) begin
+			mem_wb <= 1;
+			mem_uop <= exe_uop;
+			mem_result <= exe_result;
+			mem_flags <= exe_flags;
+		end
+		else begin
+			mem_wb <= 0;
+			mem_uop <= 0;
+			mem_result <= 0;
+			mem_flags <= 0;
+		end
+	end
+
 	/* --------------------------------------------------------- */
 	/* WB stage */
 	logic[127:0] wb_result;
 	logic[63:0] wb_flags;
 	micro_op_t wb_uop;
+
+	always_ff @ (posedge bus.clk) begin
+		if (mem_wb == 1) begin
+			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
+				regs[mem_uop.oprd1.r] <= mem_result[63:0];
+				reg_occupies[mem_uop.oprd1.r] <= 0;
+			end
+		end
+	end
 
 	always_comb begin
 		if (can_decode) begin : decode_block
