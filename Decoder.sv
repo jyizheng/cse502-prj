@@ -1,4 +1,5 @@
 `include "instruction.svh"
+`include "micro_op.svh"
 `include "gpr.svh"
 
 `define DECODER_OUTPUT 1

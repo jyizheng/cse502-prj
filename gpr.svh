@@ -26,5 +26,4 @@
 `define GPR_T_8L	3'h4
 `define GPR_T_8H	3'h5
 
-
 `endif

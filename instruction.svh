@@ -3,8 +3,6 @@
 `ifndef _INSTRUCTION_SVH_
 `define _INSTRUCTION_SVH_ 1
 
-`include "operand.svh"
-
 /* Typedefs */
 typedef struct packed {
 	logic[3:0][7:0] grp;
@@ -64,13 +62,6 @@ typedef struct packed {
 	logic[63:0] value;
 	logic[3:0] size;
 } imme_t;
-
-typedef struct packed {
-	opcode_t opcode;
-	oprd_t oprd1;
-	oprd_t oprd2;
-	oprd_t oprd3;
-} micro_op_t;
 
 `define DC_OPRD_T_NONE 5'h00
 `define DC_OPRD_T_E 5'h01

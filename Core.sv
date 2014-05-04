@@ -1,6 +1,7 @@
 `include "global.svh"
 `include "instruction.svh"
 `include "operand.svh"
+`include "micro_op.svh"
 
 module Core (
 	input[63:0] entry
