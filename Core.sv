@@ -144,7 +144,7 @@ module Core (
 	function logic df_set_reg_conflict(oprd_t oprd);
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
 		if (oprd.t == `OPRD_T_REG)
-			reg_occupies[oprd.r] = 1;
+			reg_occupies[oprd.r] = 0;
 		return 0;
 	endfunction
 

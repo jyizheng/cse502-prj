@@ -56,8 +56,10 @@ module Decoder (
 			dc_buf_full = 1;
 	endfunction
 
-	function logic dc_buf_empty();
-		dc_buf_empty = (dc_buf_head == dc_buf_tail) ? 1 : 0;
+	/* if one instruction has been taken, we need to move tail ahead in advance here */
+	function logic dc_buf_empty(logic plus_one);
+		logic[7:0] tmp_tail = (dc_buf_tail + plus_one) % `DC_BUF_SZ;
+		dc_buf_empty = (dc_buf_head == tmp_tail) ? 1 : 0;
 	endfunction
 
 	always @(posedge clk) begin
@@ -72,14 +74,14 @@ module Decoder (
 
 		/* previous uop taken by df stage */
 		if (taken)	begin
-			if (dc_buf_empty())
+			if (dc_buf_empty(0))
 				$write("[DC] FATAL dc buffer empty (head %d, tail %d)", dc_buf_head, dc_buf_tail);
 
 			dc_buf_tail <= (dc_buf_tail + 1) % `DC_BUF_SZ;
 		end
 
 		/* setup new output */
-		if (!dc_buf_empty()) begin
+		if (!dc_buf_empty(taken)) begin
 			out_dc_instr <= dc_buf[dc_buf_tail[3:0]];
 			dc_df <= 1;
 		end
