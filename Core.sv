@@ -1,3 +1,4 @@
+`include "global.svh"
 `include "instruction.svh"
 `include "operand.svh"
 
@@ -40,8 +41,6 @@ module Core (
 			fetch_rip <= entry & ~63;
 			fetch_skip <= entry[5:0];
 			fetch_offset <= 0;
-
-			//regfile <= 0;
 
 		end else begin // !bus.reset
 
@@ -96,12 +95,12 @@ module Core (
 	end
 
 	/* Data defines */
-	logic[63:0] regs[32:0];
+	logic[63:0] regs[`GLB_REG_NUM:0];
 	logic[32:0] reg_occupies;
 
 	/* Data initialization */
 	initial begin
-		for (int i = 0; i < 32; i += 1)
+		for (int i = 0; i < `GLB_REG_NUM; i += 1)
 			regs[i] = 0;
 		reg_occupies = 0;
 	end
@@ -119,7 +118,8 @@ module Core (
 	logic df_taken;
 	assign dc_taken = df_taken;
 	micro_op_t df_uop;
-	logic df_exe = 0;
+	micro_op_t df_uop_tmp;
+	logic df_exe;
 
 	/* check register conflict */
 	function logic df_reg_conflict(micro_op_t uop);
@@ -138,19 +138,40 @@ module Core (
 		return 0;
 	endfunction
 
-	function logic df_set_reg_conflict(micro_op_t uop);
+	function logic df_set_reg_conflict(oprd_t oprd);
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
-		if (uop.oprd1.t == `OPRD_T_REG)
-			reg_occupies[uop.oprd1.r] = 1;
+		if (oprd.t == `OPRD_T_REG)
+			reg_occupies[oprd.r] = 1;
 		return 0;
 	endfunction
 
 	always_comb begin
 		df_taken = 0;
+		df_exe = 0;
 		if (dc_df == 1 && !df_reg_conflict(dc_uop)) begin
 			df_taken = 1;
-			df_uop = dc_uop;
-			df_set_reg_conflict(df_uop);
+			df_exe = 1;
+			df_uop_tmp = dc_uop;
+			df_set_reg_conflict(df_uop_tmp.oprd1);
+
+			/* Retrieve register values
+			* TODO: might need special treatment for special registers */
+			if (df_uop_tmp.oprd1.t == `OPRD_T_REG) begin
+				df_uop_tmp.oprd1.value = regs[df_uop_tmp.oprd1.r];
+			end
+			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
+				df_uop_tmp.oprd2.value = regs[df_uop_tmp.oprd2.r];
+			end
+			/* FIXME: need oprd3? */
+			if (df_uop_tmp.oprd3.t == `OPRD_T_REG) begin
+				df_uop_tmp.oprd3.value = regs[df_uop_tmp.oprd3.r];
+			end
+		end
+	end
+
+	always_ff @ (posedge bus.clk) begin
+		if (dc_df == 1 && df_taken == 1) begin
+			df_uop <= df_uop_tmp;
 		end
 	end
 

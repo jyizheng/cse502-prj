@@ -1222,7 +1222,7 @@ module Decoder (
 
 	/* For relative offset, we need to extend to effective address size */
 	function logic decode_operand_J(int oprd_no);
-		logic[7:0] rel_addr_size = imme.size * 8;
+		int rel_addr_size = imme.size * 8;
 
 		dc_oprd[oprd_no].t = `OPRD_T_IMME;
 
@@ -1339,7 +1339,7 @@ module Decoder (
 
 	function logic decode_operand_rAX(int oprd_no);
 		dc_oprd[oprd_no].t = `OPRD_T_REG;
-		dc_oprd[oprd_no].r = {1'b0, rex.B, `GPR_RAX};
+		dc_oprd[oprd_no].r = {1'b0, `GPR_RAX};
 		decode_operand_rAX = 0;
 	endfunction
 
