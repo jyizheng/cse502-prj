@@ -142,10 +142,11 @@ module Core (
 		return 0;
 	endfunction
 
+	/* This can only be called from alwasy_ff */
 	function logic df_set_reg_conflict(oprd_t oprd);
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
 		if (oprd.t == `OPRD_T_REG)
-			reg_occupies[oprd.r] = 0;
+			reg_occupies[oprd.r] <= 1;
 		return 0;
 	endfunction
 
@@ -154,16 +155,17 @@ module Core (
 		if (dc_df == 1 && !df_reg_conflict(dc_uop)) begin
 			df_taken = 1;
 			df_uop_tmp = dc_uop;
-			df_set_reg_conflict(df_uop_tmp.oprd1);
 
 			/* Retrieve register values
 			* TODO: might need special treatment for special registers */
 			if (df_uop_tmp.oprd1.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd1.value = regs[df_uop_tmp.oprd1.r];
 			end
+
 			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd2.value = regs[df_uop_tmp.oprd2.r];
 			end
+
 			/* FIXME: need oprd3? */
 			if (df_uop_tmp.oprd3.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd3.value = regs[df_uop_tmp.oprd3.r];
@@ -173,6 +175,8 @@ module Core (
 
 	always_ff @ (posedge bus.clk) begin
 		if (dc_df == 1 && df_taken == 1) begin
+			/* we need to set occupation table in always_ff */
+			df_set_reg_conflict(df_uop_tmp.oprd1);
 			df_uop <= df_uop_tmp;
 			df_exe <= 1;
 		end
@@ -187,15 +191,24 @@ module Core (
 	logic exe_mem;
 	logic[127:0] exe_result;
 	logic[63:0] exe_flags;
+	micro_op_t exe_uop;
+
 	ALU alu(clk, df_exe,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
-		exe_result, exe_flags);
+		exe_result, exe_flags, exe_mem);
 
 	/* --------------------------------------------------------- */
 	/* MEM stage */
+	logic mem_wb;
+	logic[127:0] mem_result;
+	logic[63:0] mem_flags;
+	micro_op_t mem_uop;
 
 	/* --------------------------------------------------------- */
 	/* WB stage */
+	logic[127:0] wb_result;
+	logic[63:0] wb_flags;
+	micro_op_t wb_uop;
 
 	always_comb begin
 		if (can_decode) begin : decode_block

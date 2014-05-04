@@ -8,7 +8,8 @@ module ALU (
 	input[63:0] oprd2,
 	input[63:0] oprd3,
 	output[127:0] result,
-	output[63:0] flags
+	output[63:0] flags,
+	output exe_mem
 );
 	logic[127:0] tmp_result;
 
@@ -24,6 +25,13 @@ module ALU (
 	always @ (posedge clk) begin
 		result <= tmp_result[63:0];
 		/* TODO: deal with flags */
+
+		if (enable == 1) begin
+			exe_mem <= 1;
+		end
+		else begin
+			exe_mem <= 0;
+		end
 	end
 
 
