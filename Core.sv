@@ -1,4 +1,5 @@
 `include "global.svh"
+`include "gpr.svh"
 `include "instruction.svh"
 `include "operand.svh"
 `include "micro_op.svh"
@@ -150,10 +151,8 @@ module Core (
 
 	always_comb begin
 		df_taken = 0;
-		df_exe = 0;
 		if (dc_df == 1 && !df_reg_conflict(dc_uop)) begin
 			df_taken = 1;
-			df_exe = 1;
 			df_uop_tmp = dc_uop;
 			df_set_reg_conflict(df_uop_tmp.oprd1);
 
@@ -175,12 +174,22 @@ module Core (
 	always_ff @ (posedge bus.clk) begin
 		if (dc_df == 1 && df_taken == 1) begin
 			df_uop <= df_uop_tmp;
+			df_exe <= 1;
+		end
+		else begin
+			df_uop <= 0;
+			df_exe <= 0;
 		end
 	end
 
 	/* --------------------------------------------------------- */
 	/* EXE stage */
-	//ALU alu(clk, 
+	logic exe_mem;
+	logic[127:0] exe_result;
+	logic[63:0] exe_flags;
+	ALU alu(clk, df_exe,
+		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
+		exe_result, exe_flags);
 
 	/* --------------------------------------------------------- */
 	/* MEM stage */
@@ -195,25 +204,25 @@ module Core (
 		end
 	end
 
-	// cse502 : Use the following as a guide to print the Register File contents.
-	//final begin
-		//$display("RAX = %x", regfile[0]);
-		//$display("RBX = %x", regfile[3]);
-		//$display("RCX = %x", regfile[1]);
-		//$display("RDX = %x", regfile[2]);
-		//$display("RSI = %x", regfile[6]);
-		//$display("RDI = %x", regfile[7]);
-		//$display("RBP = %x", regfile[5]);
-		//$display("RSP = %x", regfile[4]);
-		//$display("R8  = %x", regfile[8]);
-		//$display("R9  = %x", regfile[9]);
-		//$display("R10 = %x", regfile[10]);
-		//$display("R11 = %x", regfile[11]);
-		//$display("R12 = %x", regfile[12]);
-		//$display("R13 = %x", regfile[13]);
-		//$display("R14 = %x", regfile[14]);
-		//$display("R15 = %x", regfile[15]);
-	//end
+	//cse502 : Use the following as a guide to print the Register File contents.
+	final begin
+		$display("RAX = %x", regs[`GPR_RAX]);
+		$display("RBX = %x", regs[`GPR_RBX]);
+		$display("RCX = %x", regs[`GPR_RCX]);
+		$display("RDX = %x", regs[`GPR_RDX]);
+		$display("RSI = %x", regs[`GPR_RSI]);
+		$display("RDI = %x", regs[`GPR_RDI]);
+		$display("RBP = %x", regs[`GPR_RBP]);
+		$display("RSP = %x", regs[`GPR_RSP]);
+		$display("R8  = %x", regs[`GPR_R8]);
+		$display("R9  = %x", regs[`GPR_R9]);
+		$display("R10 = %x", regs[`GPR_R10]);
+		$display("R11 = %x", regs[`GPR_R11]);
+		$display("R12 = %x", regs[`GPR_R12]);
+		$display("R13 = %x", regs[`GPR_R13]);
+		$display("R14 = %x", regs[`GPR_R14]);
+		$display("R15 = %x", regs[`GPR_R15]);
+	end
 endmodule
 
 /* vim: set ts=4 sw=0 tw=0 noet : */
