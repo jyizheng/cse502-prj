@@ -5,7 +5,6 @@ interface Sysbus #(DATA_WIDTH = 64, TAG_WIDTH = 1) (
 ,	input clk
 );
 
-
 wire[DATA_WIDTH-1:0] req;
 wire[TAG_WIDTH-1:0] reqtag;
 wire[DATA_WIDTH-1:0] resp;
