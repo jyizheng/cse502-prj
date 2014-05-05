@@ -221,6 +221,8 @@ module Core (
 	logic[63:0] mem_flags;
 	micro_op_t mem_uop;
 
+	Mem mem(bus);
+
 	always_ff @ (posedge bus.clk) begin
 		if (exe_mem == 1) begin
 			mem_wb <= 1;

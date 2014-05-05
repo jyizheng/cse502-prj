@@ -1,5 +1,7 @@
 `include "instruction.svh"
 
+`define ALU_DEBUG 1
+
 module ALU (
 	input clk,
 	input enable,
@@ -16,6 +18,30 @@ module ALU (
 	always_comb begin
 		if (enable) begin
 			case (opcode)
+				/* 0x00 ~ 0x05 */
+				10'b0000000???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1+oprd2);
+`endif
+					result = oprd1 + oprd2;
+				end
+
+				/* 0x08 ~ 0x0F */
+				10'b0000001???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG OR %x + %x = %x", oprd1, oprd2, oprd1 | oprd2);
+`endif
+					result = oprd1 | oprd2;
+				end
+
+				/* 0x08 ~ 0x0F */
+				10'b0000001???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG OR %x + %x = %x", oprd1, oprd2, oprd1 | oprd2);
+`endif
+					result = oprd1 | oprd2;
+				end
+
 				default:
 					$display("[ALU] Unsupported operation %x", opcode);
 			endcase
