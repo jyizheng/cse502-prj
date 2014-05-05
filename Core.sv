@@ -110,6 +110,10 @@ module Core (
 	end
 
 	/* --------------------------------------------------------- */
+	/* Instruction-Fetch stage */
+	INF inf();
+
+	/* --------------------------------------------------------- */
 	/* Decode stage */
 	logic dc_taken = 0;
 	logic dc_df = 0;
