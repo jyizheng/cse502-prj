@@ -129,8 +129,18 @@ module Core (
 	logic[63:0] icache_addr;
 	logic[511:0] icache_rdata;
 	logic icache_done;
-	ICache icache(clk, icache_addr, icache_rdata, icache_done,
+	ICache icache(clk, icache_enable, icache_addr, icache_rdata, icache_done,
 		irequest, iaddr, idata, idone);
+
+	logic dcache_enable;
+	logic dcache_wenable;
+	logic[63:0] dcache_addr;
+	logic[63:0] dcache_rdata;
+	logic[63:0] dcache_wdata;
+	logic dcache_done;
+	DCache dcache(clk,
+		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done,
+		drequest, dwrenable, daddr, drdata, dwdata, ddone);
 
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */
