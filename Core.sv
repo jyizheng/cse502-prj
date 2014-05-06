@@ -109,6 +109,22 @@ module Core (
 		reg_occupies = 0;
 	end
 
+	/* Memory arbiter and cache */
+	logic irequest;
+	logic[63:0] iaddr;
+	logic[64*8-1:0] idata;
+	logic idone;
+	logic drequest;
+	logic dwrenable;
+	logic[63:0] daddr;
+	logic[64*8-1:0] drdata;
+	logic[64*8-1:0] dwdata;
+	logic ddone;
+
+	Arbiter arbiter(bus,
+		irequest, iaddr, idata, idone,
+		drequest, dwrenable, daddr, drdata, dwdata, ddone);
+
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */
 	INF inf();

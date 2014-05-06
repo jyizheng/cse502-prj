@@ -2,9 +2,9 @@
 /* We will first fulfil the dcache, then the icache */
 
 typedef struct packed {
-	logic wr,
-	logic[3:0] t,
-	logic[7:0] priv
+	logic wr;
+	logic[3:0] t;
+	logic[7:0] priv;
 } _tag_t;
 
 `define TAG_PRIV_N 8'b00000000
@@ -47,12 +47,29 @@ module Arbiter(Sysbus bus,
 			bus.reqcyc <= 0;
 			bus.req <= 0;
 			bus.reqtag <= 0;
-			bus.respack <= 0;
-			bus.idone <= 0;
+			idone <= 0;
 			idone <= 0;
 			ddone <= 0;
 			buf_idx <= 0;
-		end else
+
+			/* start a new transfer */
+			if (drequest == 1) begin
+				bus_state <= bus_d_begin;
+				if (dwrenable)
+					reqtag.wr <= bus.WRITE;
+				else
+					reqtag.wr <= bus.READ;
+
+				reqtag.t <= bus.MEMORY;
+				reqtag.priv <= `TAG_PRIV_D;
+			end else if (irequest == 1) begin
+				bus_state <= bus_i_begin;
+				reqtag.wr <= bus.READ;
+				reqtag.t <= bus.MEMORY;
+				reqtag.priv <= `TAG_PRIV_I;
+			end
+
+		end else begin
 			if (bus_state == bus_d_begin) begin
 				bus.reqcyc <= 1;
 				bus.req <= daddr;
@@ -62,6 +79,7 @@ module Arbiter(Sysbus bus,
 				bus.req <= iaddr;
 				bus.reqtag <= reqtag;
 			end
+			/* FIXME: do we need to reset reqcyc to 0 after beginning? */
 
 			/* received respcyc from sysbus */
 			if (bus.respcyc) begin
@@ -79,7 +97,7 @@ module Arbiter(Sysbus bus,
 
 					if (bus.resptag[12] == bus.READ) begin
 						bus_buf[buf_idx+:64] <= bus.resp;
-					end else
+					end else begin
 						bus.req <= dwdata[buf_idx+:64];
 					end
 
@@ -99,27 +117,6 @@ module Arbiter(Sysbus bus,
 					else
 						bus_state <= bus_d_waiting;
 				end
-			end
-		end
-	end
-
-	always_comb begin
-		/* We are ready for next transfer */
-		if (bus_state == bus_idle) begin
-			if (drequest == 1) begin
-				bus_state = bus_d_begin;
-				if (dwrenable)
-					reqtag.wr = bus.WRITE;
-				else
-					reqtag.wr = bus.READ;
-
-				reqtag.t = bus.MEMORY;
-				reqtag.priv = `TAG_PRIV_D;
-			end else if (irequest == 1) begin
-				bus_state = bus_i_begin;
-				reqtag.wr = bus.READ;
-				reqtag.t = bus.MEMORY;
-				reqtag.priv = `TAG_PRIV_I;
 			end
 		end
 	end
