@@ -206,13 +206,11 @@ module Core (
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe == 1) begin
 			exe_uop <= df_uop;
-			exe_mem <= 1;
 			exe_result <= exe_result_tmp;
 			exe_flags <= exe_flags_tmp;
 		end
 		else begin
 			exe_uop <= 0;
-			exe_mem <= 0;
 			exe_result <= 0;
 			exe_flags <= 0;
 		end
@@ -225,7 +223,7 @@ module Core (
 	logic[63:0] mem_flags;
 	micro_op_t mem_uop;
 
-	Mem mem(bus);
+	Mem mem(clk, exe_mem);
 
 	always_ff @ (posedge bus.clk) begin
 		if (exe_mem == 1) begin

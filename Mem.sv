@@ -1,9 +1,11 @@
-module Mem (Sysbus bus);
+module Mem (input clk,
+	input enable);
 
 	enum { mem_idle, mem_waiting, mem_active } mem_state;
 
-	always_ff @ (posedge bus.clk) begin
-		$display("[MEM]");
+	always_ff @ (posedge clk) begin
+		if (enable)
+			$display("[MEM]");
 	end
 
 	always_comb begin
