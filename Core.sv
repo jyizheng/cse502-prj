@@ -36,44 +36,44 @@ module Core (
 		end
 	end
 
-	assign bus.respack = bus.respcyc; // always able to accept response
-
-	always @ (posedge bus.clk)
-		if (bus.reset) begin
-
-			fetch_state <= fetch_idle;
-			fetch_rip <= entry & ~63;
-			fetch_skip <= entry[5:0];
-			fetch_offset <= 0;
-
-		end else begin // !bus.reset
-
-			bus.reqcyc <= send_fetch_req;
-			bus.req <= fetch_rip & ~63;
-			bus.reqtag <= { bus.READ, bus.MEMORY, 8'b0 };
-
-			if (bus.respcyc) begin
-				assert(!send_fetch_req) else $fatal;
-				fetch_state <= fetch_active;
-				fetch_rip <= fetch_rip + 8;
-				if (fetch_skip > 0) begin
-					fetch_skip <= fetch_skip - 8;
-				end else begin
-					//$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
-					decode_buffer[fetch_offset*8 +: 64] <= bus.resp;
-					//$display("fill at %d: %x [%x]", fetch_offset, bus.resp, decode_buffer);
-					fetch_offset <= fetch_offset + 8;
-				end
-			end else begin
-				if (fetch_state == fetch_active) begin
-					fetch_state <= fetch_idle;
-				end else if (bus.reqack) begin
-					assert(fetch_state == fetch_idle) else $fatal;
-					fetch_state <= fetch_waiting;
-				end
-			end
-
-		end
+//	assign bus.respack = bus.respcyc; // always able to accept response
+//
+//	always @ (posedge bus.clk)
+//		if (bus.reset) begin
+//
+//			fetch_state <= fetch_idle;
+//			fetch_rip <= entry & ~63;
+//			fetch_skip <= entry[5:0];
+//			fetch_offset <= 0;
+//
+//		end else begin // !bus.reset
+//
+//			bus.reqcyc <= send_fetch_req;
+//			bus.req <= fetch_rip & ~63;
+//			bus.reqtag <= { bus.READ, bus.MEMORY, 8'b0 };
+//
+//			if (bus.respcyc) begin
+//				assert(!send_fetch_req) else $fatal;
+//				fetch_state <= fetch_active;
+//				fetch_rip <= fetch_rip + 8;
+//				if (fetch_skip > 0) begin
+//					fetch_skip <= fetch_skip - 8;
+//				end else begin
+//					//$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
+//					decode_buffer[fetch_offset*8 +: 64] <= bus.resp;
+//					//$display("fill at %d: %x [%x]", fetch_offset, bus.resp, decode_buffer);
+//					fetch_offset <= fetch_offset + 8;
+//				end
+//			end else begin
+//				if (fetch_state == fetch_active) begin
+//					fetch_state <= fetch_idle;
+//				end else if (bus.reqack) begin
+//					assert(fetch_state == fetch_idle) else $fatal;
+//					fetch_state <= fetch_waiting;
+//				end
+//			end
+//
+//		end
 
 	wire[0:(128+15)*8-1] decode_bytes_repeated = { decode_buffer, decode_buffer[0:15*8-1] }; // NOTE: buffer bits are left-to-right in increasing order
 	wire[0:15*8-1] decode_bytes = decode_bytes_repeated[decode_offset*8 +: 15*8]; // NOTE: buffer bits are left-to-right in increasing order
@@ -124,6 +124,13 @@ module Core (
 	Arbiter arbiter(bus,
 		irequest, iaddr, idata, idone,
 		drequest, dwrenable, daddr, drdata, dwdata, ddone);
+
+	logic icache_enable;
+	logic[63:0] icache_addr;
+	logic[511:0] icache_rdata;
+	logic icache_done;
+	ICache icache(clk, icache_addr, icache_rdata, icache_done,
+		irequest, iaddr, idata, idone);
 
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */

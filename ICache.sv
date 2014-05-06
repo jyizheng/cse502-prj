@@ -3,7 +3,13 @@ module ICache(input clk,
 	input enable,
 	input[63:0] addr,
 	output[511:0] rdata,
-	output done);
+	output done,
+
+	output irequest,
+	output[63:0] iaddr,
+	input[511:0] idata,
+	input idone
+);
 
 	always_ff @ (posedge clk) begin
 		done <= 0;
