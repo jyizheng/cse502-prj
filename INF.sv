@@ -43,6 +43,7 @@ module INF(input clk,
 		if (set_rip) begin
 			initialized <= 1;
 			fetch_state <= fetch_idle;
+			decode_rip <= new_rip;
 			fetch_rip <= new_rip & ~63;
 			fetch_skip <= new_rip[5:0];
 			fetch_offset <= 0;
@@ -69,6 +70,7 @@ module INF(input clk,
 			end
 
 			decode_offset <= decode_offset + { bytes_decoded };
+			decode_rip <= decode_rip + bytes_decoded;
 		end
 	end
 

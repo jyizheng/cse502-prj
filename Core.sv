@@ -35,6 +35,7 @@ module Core (
 		reg_occupies = 0;
 	end
 
+	/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 	/* Memory arbiter and cache */
 	logic irequest;
 	logic[63:0] iaddr;
@@ -95,7 +96,7 @@ module Core (
 	logic dc_taken = 0;
 	logic dc_df = 0;
 	micro_op_t dc_uop;
-	Decoder decoder(clk, if_dc, fetch_rip, decode_bytes, dc_taken,
+	Decoder decoder(clk, if_dc, decode_rip, decode_bytes, dc_taken,
 		bytes_decoded, dc_uop, dc_df);
 
 	/* --------------------------------------------------------- */
