@@ -11,9 +11,27 @@ module ICache(input clk,
 	input idone
 );
 
+	enum { state_idle, state_wait } state;
+
 	always_ff @ (posedge clk) begin
-		if (enable == 0) begin
+		if (state == state_idle) begin
 			done <= 0;
+			rdata <= 0;
+			if (enable == 1) begin
+				assert((addr & 63) == 0) else $fatal;
+
+				state <= state_wait;
+				irequest <= 1;
+				iaddr <= addr;
+			end
+		end else begin // !state_idle
+			irequest <= 0;
+
+			if (idone) begin
+				state <= state_idle;
+				rdata <= idata;
+				done <= 1;
+			end
 		end
 	end
 

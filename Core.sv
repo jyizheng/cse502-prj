@@ -44,21 +44,20 @@ module Core (
 			fetch_offset <= 0;
 		end else begin
 			if (fetch_state == fetch_waiting) begin
-				irequest <= 0;
-				if (idone == 1) begin
+				icache_enable <= 0;
+				if (icache_done == 1) begin
 					fetch_rip <= fetch_rip + 64;
 					for (int i = fetch_skip; i < 64; i += 8) begin
-						decode_buffer[(fetch_offset+i-fetch_skip)*8+:64] <= idata[i*8+:64];
+						decode_buffer[(fetch_offset+i-fetch_skip)*8+:64] <= icache_rdata[i*8+:64];
 					end
 					fetch_offset <= fetch_offset + (64 - fetch_skip);
 					fetch_skip <= 0;
-					irequest <= 0;
-					iaddr <= 0;
+					icache_addr <= 0;
 					fetch_state <= fetch_idle;
 				end
 			end else if (send_fetch_req) begin // !fetch_waiting
-				irequest <= 1;
-				iaddr <= fetch_rip & ~63;
+				icache_enable <= 1;
+				icache_addr <= fetch_rip & ~63;
 				fetch_state <= fetch_waiting;
 			end
 		end
