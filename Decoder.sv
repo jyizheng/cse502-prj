@@ -14,7 +14,7 @@ module Decoder (
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
 	input taken,	// If pipeline has taken the sent instruction
-	output[3:0] bytes_decoded,
+	output[7:0] bytes_decoded,
 	output micro_op_t out_dc_instr,
 	output dc_df
 );

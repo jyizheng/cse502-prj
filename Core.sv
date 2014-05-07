@@ -10,11 +10,6 @@ module Core (
 );
 	import "DPI-C" function longint syscall_cse502(input longint rax, input longint rdi, input longint rsi, input longint rdx, input longint r10, input longint r8, input longint r9);
 
-	enum { fetch_idle, fetch_waiting, fetch_active } fetch_state;
-	logic[63:0] fetch_rip;
-	logic[0:2*64*8-1] decode_buffer; // NOTE: buffer bits are left-to-right in increasing order
-	logic[5:0] fetch_skip;
-	logic[6:0] fetch_offset, decode_offset;
 
 	/* XXX: verilator bug work around for passing bus.clk */
 	logic clk;
@@ -25,105 +20,9 @@ module Core (
 		mtrr_is_mmio = ((physaddr > 640*1024 && physaddr < 1024*1024));
 	endfunction
 
-	logic send_fetch_req;
-	always_comb begin
-		if (fetch_state != fetch_idle) begin
-			send_fetch_req = 0; // hack: in theory, we could try to send another request at this point
-		end else if (bus.reqack) begin
-			send_fetch_req = 0; // hack: still idle, but already got ack (in theory, we could try to send another request as early as this)
-		end else begin
-			send_fetch_req = (fetch_offset - decode_offset < 7'd32);
-		end
-	end
-
-	always @ (posedge bus.clk) begin
-		if (bus.reset) begin
-			fetch_state <= fetch_idle;
-			fetch_rip <= entry & ~63;
-			fetch_skip <= entry[5:0];
-			fetch_offset <= 0;
-		end else begin
-			if (fetch_state == fetch_waiting) begin
-				icache_enable <= 0;
-				if (icache_done == 1) begin
-					fetch_rip <= fetch_rip + 64;
-					for (int i = fetch_skip; i < 64; i += 8) begin
-						decode_buffer[(fetch_offset+i-fetch_skip)*8+:64] <= icache_rdata[i*8+:64];
-					end
-					fetch_offset <= fetch_offset + (64 - fetch_skip);
-					fetch_skip <= 0;
-					icache_addr <= 0;
-					fetch_state <= fetch_idle;
-				end
-			end else if (send_fetch_req) begin // !fetch_waiting
-				icache_enable <= 1;
-				icache_addr <= fetch_rip & ~63;
-				fetch_state <= fetch_waiting;
-			end
-		end
-	end
-
-//	assign bus.respack = bus.respcyc; // always able to accept response
-//
-//	always @ (posedge bus.clk)
-//		if (bus.reset) begin
-//
-//			fetch_state <= fetch_idle;
-//			fetch_rip <= entry & ~63;
-//			fetch_skip <= entry[5:0];
-//			fetch_offset <= 0;
-//
-//		end else begin // !bus.reset
-//
-//			bus.reqcyc <= send_fetch_req;
-//			bus.req <= fetch_rip & ~63;
-//			bus.reqtag <= { bus.READ, bus.MEMORY, 8'b0 };
-//
-//			if (bus.respcyc) begin
-//				assert(!send_fetch_req) else $fatal;
-//				fetch_state <= fetch_active;
-//				fetch_rip <= fetch_rip + 8;
-//				if (fetch_skip > 0) begin
-//					fetch_skip <= fetch_skip - 8;
-//				end else begin
-//					//$display("Fetch: [%d] %08x %08x", fetch_offset, bus.resp[63:32], bus.resp[31:0]);
-//					decode_buffer[fetch_offset*8 +: 64] <= bus.resp;
-//					//$display("fill at %d: %x [%x]", fetch_offset, bus.resp, decode_buffer);
-//					fetch_offset <= fetch_offset + 8;
-//				end
-//			end else begin
-//				if (fetch_state == fetch_active) begin
-//					fetch_state <= fetch_idle;
-//				end else if (bus.reqack) begin
-//					assert(fetch_state == fetch_idle) else $fatal;
-//					fetch_state <= fetch_waiting;
-//				end
-//			end
-//
-//		end
-
-	wire[0:(128+15)*8-1] decode_bytes_repeated = { decode_buffer, decode_buffer[0:15*8-1] }; // NOTE: buffer bits are left-to-right in increasing order
-	wire[0:15*8-1] decode_bytes = decode_bytes_repeated[decode_offset*8 +: 15*8]; // NOTE: buffer bits are left-to-right in increasing order
-	wire can_decode = (fetch_offset - decode_offset >= 7'd15);
-
 	function logic opcode_inside(logic[7:0] value, low, high);
 		opcode_inside = (value >= low && value <= high);
 	endfunction
-
-	logic[3:0] bytes_decoded_this_cycle;
-
-	always @ (posedge bus.clk) begin
-		if (bus.reset) begin
-
-			decode_offset <= 0;
-			decode_buffer <= 0;
-
-		end else begin // !bus.reset
-
-			decode_offset <= decode_offset + { 3'b0, bytes_decoded_this_cycle };
-
-		end
-	end
 
 	/* Data defines */
 	logic[63:0] regs[`GLB_REG_NUM:0];
@@ -173,7 +72,23 @@ module Core (
 	/* Instruction-Fetch stage */
 	logic dc_if;
 	logic if_dc;
-	INF inf(clk, icache_enable, icache_addr, icache_rdata, icache_done, dc_if, if_dc);
+	logic[0:15*8-1] decode_bytes;
+	logic[63:0] decode_rip;
+	logic[7:0] bytes_decoded;
+	logic if_set_rip;
+	logic[63:0] if_new_rip;
+	INF inf(clk, if_set_rip, if_new_rip, icache_enable, icache_addr, icache_rdata, icache_done,
+		decode_bytes, decode_rip, bytes_decoded, if_dc, dc_if);
+
+	always_ff @ (posedge bus.clk) begin
+		if (bus.reset) begin
+			if_set_rip <= 1;
+			if_new_rip <= entry;
+		end else if (if_set_rip == 1) begin
+			if_set_rip <= 0;
+			if_new_rip <= 0;
+		end
+	end
 
 	/* --------------------------------------------------------- */
 	/* Decode stage */
@@ -181,7 +96,7 @@ module Core (
 	logic dc_df = 0;
 	micro_op_t dc_uop;
 	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, dc_taken,
-		bytes_decoded_this_cycle, dc_uop, dc_df);
+		bytes_decoded, dc_uop, dc_df);
 
 	/* --------------------------------------------------------- */
 	/* Data Fetch & Schedule stage */
