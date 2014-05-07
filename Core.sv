@@ -36,6 +36,34 @@ module Core (
 		end
 	end
 
+	always @ (posedge bus.clk) begin
+		if (bus.reset) begin
+			fetch_state <= fetch_idle;
+			fetch_rip <= entry & ~63;
+			fetch_skip <= entry[5:0];
+			fetch_offset <= 0;
+		end else begin
+			if (fetch_state == fetch_waiting) begin
+				irequest <= 0;
+				if (idone == 1) begin
+					fetch_rip <= fetch_rip + 64;
+					for (int i = fetch_skip; i < 64; i += 8) begin
+						decode_buffer[(fetch_offset+i-fetch_skip)*8+:64] <= idata[i*8+:64];
+					end
+					fetch_offset <= fetch_offset + (64 - fetch_skip);
+					fetch_skip <= 0;
+					irequest <= 0;
+					iaddr <= 0;
+					fetch_state <= fetch_idle;
+				end
+			end else if (send_fetch_req) begin // !fetch_waiting
+				irequest <= 1;
+				iaddr <= fetch_rip & ~63;
+				fetch_state <= fetch_waiting;
+			end
+		end
+	end
+
 //	assign bus.respack = bus.respcyc; // always able to accept response
 //
 //	always @ (posedge bus.clk)
@@ -144,7 +172,9 @@ module Core (
 
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */
-	INF inf();
+	logic dc_if;
+	logic if_dc;
+	INF inf(clk, icache_enable, icache_addr, icache_rdata, icache_done, dc_if, if_dc);
 
 	/* --------------------------------------------------------- */
 	/* Decode stage */
@@ -291,7 +321,7 @@ module Core (
 	always_comb begin
 		if (can_decode) begin : decode_block
 			// cse502 : following is an example of how to finish the simulation
-			if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
+			//if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
 		end
 	end
 

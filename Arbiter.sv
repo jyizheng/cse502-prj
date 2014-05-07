@@ -107,11 +107,13 @@ module Arbiter(Sysbus bus,
 				if (bus_state == bus_i_active) begin
 					bus_state <= bus_idle;
 					idone <= 1;
+					idata <= bus_buf;
 				end else if (bus_state == bus_d_active) begin
 					bus_state <= bus_idle;
 					ddone <= 1;
 				end else if (bus.reqack) begin
 					assert(bus_state == bus_i_begin || bus_state == bus_d_begin) else $fatal;
+					bus.reqcyc <= 0;
 					if (bus_state == bus_i_begin)
 						bus_state <= bus_i_waiting;
 					else

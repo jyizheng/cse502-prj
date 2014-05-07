@@ -12,7 +12,9 @@ module ICache(input clk,
 );
 
 	always_ff @ (posedge clk) begin
-		done <= 0;
+		if (enable == 0) begin
+			done <= 0;
+		end
 	end
 
 endmodule
