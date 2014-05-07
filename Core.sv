@@ -70,8 +70,8 @@ module Core (
 
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */
-	logic dc_if;
 	logic if_dc;
+	logic dc_if;
 	logic[0:15*8-1] decode_bytes;
 	logic[63:0] decode_rip;
 	logic[7:0] bytes_decoded;
@@ -95,7 +95,7 @@ module Core (
 	logic dc_taken = 0;
 	logic dc_df = 0;
 	micro_op_t dc_uop;
-	Decoder decoder(clk, can_decode, fetch_rip, decode_bytes, dc_taken,
+	Decoder decoder(clk, if_dc, fetch_rip, decode_bytes, dc_taken,
 		bytes_decoded, dc_uop, dc_df);
 
 	/* --------------------------------------------------------- */
@@ -233,7 +233,7 @@ module Core (
 	end
 
 	always_comb begin
-		if (can_decode) begin : decode_block
+		if (if_dc) begin : decode_block
 			// cse502 : following is an example of how to finish the simulation
 			//if (decode_bytes == 0 && fetch_state == fetch_idle) $finish;
 		end
