@@ -1399,7 +1399,16 @@ module Decoder (
 			num_decoded_uops = 2;
 		end
 
-		num_decoded_uops = 1;
+		if (can_decode && (bytes_decoded != 0) && (num_decoded_uops == 0)) begin
+			decoded_uops[0] = 0;
+			decoded_uops[0].opcode = opcode;
+			decoded_uops[0].oprd1 = dc_oprd[0];
+			decoded_uops[0].oprd2 = dc_oprd[1];
+			decoded_uops[0].oprd3 = dc_oprd[2];
+
+			num_decoded_uops = 1;
+		end
+
 		return 0;
 	endfunction
 
@@ -1466,12 +1475,12 @@ module Decoder (
 	/* verilator lint_on UNUSED */
 
 	always_comb begin
+		num_decoded_uops = 0;
+
 		if (can_decode && !dc_buf_full()) begin : decoder
 
 			logic[7:0] next_byte;
 			logic rex_met = 1'b0;
-
-			num_decoded_uops = 0;
 
 			prefix = 32'h0000_0000;
 			rex = 4'b0000;
@@ -1622,6 +1631,7 @@ module Decoder (
 				decode_one();
 
 				/* Split uop if necessary */
+				split_uop();
 
 `ifdef DECODER_OUTPUT
 				/* output */
