@@ -5,6 +5,7 @@
 `define OPRD_T_REG	1
 `define OPRD_T_MEM	2
 `define OPRD_T_IMME	3
+`define OPRD_T_STACK	4
 
 `define OPRD_R_NONE	5'h1F
 

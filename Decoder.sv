@@ -33,6 +33,9 @@ module Decoder (
 	int effect_oprd_size = 0;
 	int effect_addr_size = 0;
 
+	micro_op_t decoded_uops[3];
+	logic[7:0] num_decoded_uops;
+
 	/* Begin DC output buffer */
 	micro_op_t dc_buf[`DC_BUF_SZ];
 	logic[7:0] dc_buf_head;
@@ -65,11 +68,17 @@ module Decoder (
 	always @(posedge clk) begin
 		/* Put decoded instruction into buffer */
 		if (can_decode && !dc_buf_full()) begin
-			dc_buf[dc_buf_head[3:0]].opcode <= opcode;
-			dc_buf[dc_buf_head[3:0]].oprd1 <= dc_oprd[0];
-			dc_buf[dc_buf_head[3:0]].oprd2 <= dc_oprd[1];
-			dc_buf[dc_buf_head[3:0]].oprd3 <= dc_oprd[2];
-			dc_buf_head <= (dc_buf_head + 1) % `DC_BUF_SZ;
+			if (num_decoded_uops >= 1) begin
+				dc_buf[dc_buf_head[3:0]] <= decoded_uops[0];
+			end
+			if (num_decoded_uops >= 2) begin
+				dc_buf[(dc_buf_head + 1) % `DC_BUF_SZ] <= decoded_uops[1];
+			end
+			if (num_decoded_uops >= 3) begin
+				dc_buf[(dc_buf_head + 2) % `DC_BUF_SZ] <= decoded_uops[2];
+			end
+
+			dc_buf_head <= (dc_buf_head + num_decoded_uops) % `DC_BUF_SZ;
 		end
 
 		/* previous uop taken by df stage */
@@ -1346,6 +1355,53 @@ module Decoder (
 		decode_operand_rAX = 0;
 	endfunction
 
+	function logic split_uop();
+		assert(!(dc_oprd[0].t == `OPRD_T_MEM && dc_oprd[1].t == `OPRD_T_MEM)) else $fatal;
+		/* operand 1 is MEM */
+		if (dc_oprd[0].t == `OPRD_T_MEM) begin
+			/* Exclude MOV operation */
+			decoded_uops[0] = 0;
+			decoded_uops[0].opcode.opcode = 7'h40;
+			decoded_uops[0].oprd1.t = `OPRD_T_REG;
+			decoded_uops[0].oprd1.r = `GPR_RM;
+			decoded_uops[0].oprd2 = dc_oprd[0];
+
+			decoded_uops[1] = 0;
+			decoded_uops[1].opcode = opcode;
+			decoded_uops[1].oprd1.t = `OPRD_T_REG;
+			decoded_uops[1].oprd1.r = `GPR_RM;
+			decoded_uops[1].oprd2 = dc_oprd[1];
+
+			decoded_uops[2] = 0;
+			decoded_uops[0].opcode.opcode = 7'h48;
+			decoded_uops[2].oprd1 = dc_oprd[0];
+			decoded_uops[2].oprd2.t = `OPRD_T_REG;
+			decoded_uops[2].oprd2.r = `GPR_RM;
+
+			num_decoded_uops = 3;
+		end
+
+		/* operand 2 is MEM */
+		if (dc_oprd[1].t == `OPRD_T_MEM) begin
+			/* Exclude MOV operation */
+			decoded_uops[0] = 0;
+			decoded_uops[0].opcode.opcode = 7'h40;
+			decoded_uops[0].oprd1.t = `OPRD_T_REG;
+			decoded_uops[0].oprd1.r = `GPR_RM;
+			decoded_uops[0].oprd2 = dc_oprd[1];
+
+			decoded_uops[1] = 0;
+			decoded_uops[1].opcode = opcode;
+			decoded_uops[1].oprd1 = dc_oprd[0];
+			decoded_uops[1].oprd2.t = `OPRD_T_REG;
+			decoded_uops[1].oprd2.r = `GPR_RM;
+
+			num_decoded_uops = 2;
+		end
+
+		num_decoded_uops = 1;
+		return 0;
+	endfunction
 
 	function logic decode_one();
 		oprd_desc_t oprd_dsc1;
@@ -1414,6 +1470,8 @@ module Decoder (
 
 			logic[7:0] next_byte;
 			logic rex_met = 1'b0;
+
+			num_decoded_uops = 0;
 
 			prefix = 32'h0000_0000;
 			rex = 4'b0000;
@@ -1562,6 +1620,8 @@ module Decoder (
 
 				/* decode */
 				decode_one();
+
+				/* Split uop if necessary */
 
 `ifdef DECODER_OUTPUT
 				/* output */
