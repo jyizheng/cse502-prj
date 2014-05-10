@@ -4,6 +4,8 @@
 `include "operand.svh"
 `include "micro_op.svh"
 
+`define CORE_DEBUG 1
+
 module Core (
 	input[63:0] entry
 ,	/* verilator lint_off UNDRIVEN */ /* verilator lint_off UNUSED */ Sysbus bus /* verilator lint_on UNUSED */ /* verilator lint_on UNDRIVEN */
@@ -183,6 +185,9 @@ module Core (
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe == 1) begin
 			exe_uop <= df_uop;
+`ifdef CORE_DEBUG
+			$display("[CORE] REG1 = %d REG2 = %d", df_uop.oprd1.r, df_uop.oprd2.r);
+`endif
 		end
 		else begin
 			exe_uop <= 0;
@@ -218,13 +223,35 @@ module Core (
 	logic[127:0] wb_result;
 	logic[63:0] wb_flags;
 	micro_op_t wb_uop;
+	logic[4:0] reg_num;
 
 	always_ff @ (posedge bus.clk) begin
 		if (mem_wb == 1) begin
 			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
+				reg_num <= mem_uop.oprd1.r;
 			end
+
+`ifdef CORE_DEBUG
+			$display("RAX = %x", regs[`GPR_RAX]);
+			$display("RBX = %x", regs[`GPR_RBX]);
+			$display("RCX = %x", regs[`GPR_RCX]);
+			$display("RDX = %x", regs[`GPR_RDX]);
+			$display("RSI = %x", regs[`GPR_RSI]);
+			$display("RDI = %x", regs[`GPR_RDI]);
+			$display("RBP = %x", regs[`GPR_RBP]);
+			$display("RSP = %x", regs[`GPR_RSP]);
+			$display("R8  = %x", regs[`GPR_R8]);
+			$display("R9  = %x", regs[`GPR_R9]);
+			$display("R10 = %x", regs[`GPR_R10]);
+			$display("R11 = %x", regs[`GPR_R11]);
+			$display("R12 = %x", regs[`GPR_R12]);
+			$display("R13 = %x", regs[`GPR_R13]);
+			$display("R14 = %x", regs[`GPR_R14]);
+			$display("R15 = %x", regs[`GPR_R15]);
+`endif
+
 		end
 	end
 

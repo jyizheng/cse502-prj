@@ -6,7 +6,7 @@
 `define DECODER_DEBUG 1
 
 `define DC_BUF_SZ	16
-`define DC_MAX_INSTR	3	// maximum number of instructions per cycle
+`define DC_MAX_INSTR	4	// maximum number of instructions per cycle
 
 module Decoder (
 	input clk,
@@ -51,7 +51,7 @@ module Decoder (
 		if (dc_buf_head >= dc_buf_tail)
 			space = `DC_BUF_SZ - (dc_buf_head - dc_buf_tail) - 1;
 		else
-			space = `DC_BUF_SZ - (dc_buf_tail - dc_buf_head) - 1;
+			space = (dc_buf_tail - dc_buf_head) - 1;
 
 		if (space >= `DC_MAX_INSTR)
 			dc_buf_full = 0;
@@ -1429,6 +1429,7 @@ module Decoder (
 		casez (opcode)
 			/* modrm extensions */
 			/* Group 1*/
+			10'h081: translate_grp1();
 			10'h083: translate_grp1();
 			default: /* Do nothing */;
 		endcase
