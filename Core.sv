@@ -204,13 +204,11 @@ module Core (
 		if (exe_mem == 1) begin
 			mem_wb <= 1;
 			mem_uop <= exe_uop;
-			mem_result <= exe_result;
 			mem_flags <= exe_flags;
 		end
 		else begin
 			mem_wb <= 0;
 			mem_uop <= 0;
-			mem_result <= 0;
 			mem_flags <= 0;
 		end
 	end

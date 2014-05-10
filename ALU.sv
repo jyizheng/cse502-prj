@@ -17,7 +17,7 @@ module ALU (
 
 	always_comb begin
 		if (enable) begin
-			casex (opcode)
+			casez (opcode)
 				/* 0x00 ~ 0x05 */
 				10'b0000000???: begin
 `ifdef ALU_DEBUG

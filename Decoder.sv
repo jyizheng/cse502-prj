@@ -1418,6 +1418,7 @@ module Decoder (
 			3'b001: begin
 				opcode = 10'b1100000001;
 			end
+			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
 
 		translate_grp1 = 0;
@@ -1439,10 +1440,6 @@ module Decoder (
 		oprd_desc_t oprd_dsc1;
 		oprd_desc_t oprd_dsc2;
 		oprd_desc_t oprd_dsc3;
-
-		effect_oprd_size = (rex.W == 1) ? 64 :
-			((prefix.grp[2] == 0) ? 32 : 16);
-		effect_addr_size = (prefix.grp[3] == 0) ? 64 : 32;
 
 `ifdef DECODER_DEBUG
 		if (effect_oprd_size != 64)
@@ -1647,6 +1644,10 @@ module Decoder (
 					bytes_decoded += 1;
 					next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
 				end
+
+				effect_oprd_size = (rex.W == 1) ? 64 :
+				((prefix.grp[2] == 0) ? 32 : 16);
+				effect_addr_size = (prefix.grp[3] == 0) ? 64 : 32;
 
 `ifdef DECODER_OUTPUT
 				/* output */
