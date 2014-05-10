@@ -1412,6 +1412,29 @@ module Decoder (
 		return 0;
 	endfunction
 
+	function translate_grp1();
+
+		casez (modrm.v.reg_op)
+			3'b001: begin
+				opcode = 10'b1100000001;
+			end
+		endcase
+
+		translate_grp1 = 0;
+	endfunction
+
+	function translate_opcode();
+
+		casez (opcode)
+			/* modrm extensions */
+			/* Group 1*/
+			10'h083: translate_grp1();
+			default: /* Do nothing */;
+		endcase
+
+		translate_opcode = 0;
+	endfunction
+
 	function logic decode_one();
 		oprd_desc_t oprd_dsc1;
 		oprd_desc_t oprd_dsc2;
@@ -1427,8 +1450,6 @@ module Decoder (
 		if (effect_addr_size != 64)
 			$display("[DC] DEBUG operand addr size is not 64 (%d)", effect_addr_size);
 `endif
-
-		/* FIXME: Need to handle special opcodes */
 
 		/* Parse operands */
 		oprd_dsc1 = get_operand1_desc();
@@ -1627,12 +1648,6 @@ module Decoder (
 					next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
 				end
 
-				/* decode */
-				decode_one();
-
-				/* Split uop if necessary */
-				split_uop();
-
 `ifdef DECODER_OUTPUT
 				/* output */
 				$write("(rip %x [%d]):", rip, bytes_decoded);
@@ -1642,6 +1657,15 @@ module Decoder (
 				$write("\n\t");
 				decode_output();
 `endif
+
+				/* decode */
+				decode_one();
+
+				/* FIXME: Need to handle special opcodes */
+				translate_opcode();
+
+				/* Split uop if necessary */
+				split_uop();
 
 			end /* error_code != ec_rex */
 

@@ -17,29 +17,46 @@ module ALU (
 
 	always_comb begin
 		if (enable) begin
-			case (opcode)
+			casex (opcode)
 				/* 0x00 ~ 0x05 */
 				10'b0000000???: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1+oprd2);
 `endif
-					result = oprd1 + oprd2;
+					tmp_result = oprd1 + oprd2;
 				end
 
 				/* 0x08 ~ 0x0F */
 				10'b0000001???: begin
 `ifdef ALU_DEBUG
-					$display("[ALU] DBG OR %x + %x = %x", oprd1, oprd2, oprd1 | oprd2);
+					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
 `endif
-					result = oprd1 | oprd2;
+					tmp_result = oprd1 | oprd2;
 				end
 
-				/* 0x08 ~ 0x0F */
-				10'b0000001???: begin
+				/* 0x88 ~ 0x8B */
+				10'b00100010??: begin
 `ifdef ALU_DEBUG
-					$display("[ALU] DBG OR %x + %x = %x", oprd1, oprd2, oprd1 | oprd2);
+					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
-					result = oprd1 | oprd2;
+					tmp_result = oprd2;
+				end
+
+				/* 0xB8 ~ 0xBF */
+				10'b0010111???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
+
+				/* Extensions */
+				/* 0x83 001 */
+				10'b1100000001: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
+`endif
+					tmp_result = oprd1 | oprd2;
 				end
 
 				default:
@@ -49,10 +66,10 @@ module ALU (
 	end
 
 	always @ (posedge clk) begin
-		result <= tmp_result[63:0];
 		/* TODO: deal with flags */
 
 		if (enable == 1) begin
+			result <= tmp_result;
 			exe_mem <= 1;
 		end
 		else begin

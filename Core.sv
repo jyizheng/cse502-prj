@@ -173,24 +173,19 @@ module Core (
 	logic exe_mem;
 	logic[127:0] exe_result;
 	logic[63:0] exe_flags;
-	logic[127:0] exe_result_tmp;
 	logic[63:0] exe_flags_tmp;
 	micro_op_t exe_uop;
 
 	ALU alu(clk, df_exe,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
-		exe_result_tmp, exe_flags_tmp, exe_mem);
+		exe_result, exe_flags_tmp, exe_mem);
 
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe == 1) begin
 			exe_uop <= df_uop;
-			exe_result <= exe_result_tmp;
-			exe_flags <= exe_flags_tmp;
 		end
 		else begin
 			exe_uop <= 0;
-			exe_result <= 0;
-			exe_flags <= 0;
 		end
 	end
 
@@ -201,7 +196,9 @@ module Core (
 	logic[63:0] mem_flags;
 	micro_op_t mem_uop;
 
-	Mem mem(clk, exe_mem);
+	Mem mem(clk, exe_mem,
+		exe_uop.oprd1, exe_result, mem_result,
+		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 
 	always_ff @ (posedge bus.clk) begin
 		if (exe_mem == 1) begin
