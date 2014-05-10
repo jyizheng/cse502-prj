@@ -4,7 +4,7 @@
 `include "operand.svh"
 `include "micro_op.svh"
 
-`define CORE_DEBUG 1
+//`define CORE_DEBUG 1
 
 module Core (
 	input[63:0] entry
@@ -98,8 +98,8 @@ module Core (
 	logic dc_taken = 0;
 	logic dc_df = 0;
 	micro_op_t dc_uop;
-	Decoder decoder(clk, if_dc, decode_rip, decode_bytes, dc_taken,
-		bytes_decoded, dc_uop, dc_df);
+	Decoder decoder(clk, if_dc, dc_if, decode_rip, decode_bytes, dc_taken,
+		bytes_decoded, dc_uop, dc_df, df_dc);
 
 	/* --------------------------------------------------------- */
 	/* Data Fetch & Schedule stage */
@@ -108,6 +108,7 @@ module Core (
 	micro_op_t df_uop;
 	micro_op_t df_uop_tmp;
 	logic df_exe;
+	logic exe_df;
 
 	/* check register conflict */
 	function logic df_reg_conflict(micro_op_t uop);
@@ -178,9 +179,9 @@ module Core (
 	logic[63:0] exe_flags_tmp;
 	micro_op_t exe_uop;
 
-	ALU alu(clk, df_exe,
+	ALU alu(clk, df_exe, exe_df,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
-		exe_result, exe_flags_tmp, exe_mem);
+		exe_result, exe_flags_tmp, exe_mem, mem_exe);
 
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe == 1) begin
@@ -197,11 +198,12 @@ module Core (
 	/* --------------------------------------------------------- */
 	/* MEM stage */
 	logic mem_wb;
+	logic wb_mem;
 	logic[127:0] mem_result;
 	logic[63:0] mem_flags;
 	micro_op_t mem_uop;
 
-	Mem mem(clk, exe_mem,
+	Mem mem(clk, exe_mem, mem_exe,
 		exe_uop.oprd1, exe_result, mem_result,
 		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 

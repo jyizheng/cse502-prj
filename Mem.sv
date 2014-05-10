@@ -1,5 +1,6 @@
 module Mem (input clk,
 	input enable,
+	output mem_exe,
 
 	input oprd_t oprd,
 	input[127:0] alu_result,

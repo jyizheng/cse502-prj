@@ -11,13 +11,21 @@
 module Decoder (
 	input clk,
 	input can_decode,
+	output dc_if,
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
 	input taken,	// If pipeline has taken the sent instruction
 	output[7:0] bytes_decoded,
 	output micro_op_t out_dc_instr,
-	output dc_df
+	output dc_df,
+	input df_dc
 );
+
+	enum { dc_norm, dc_stall } dc_state;
+
+	initial begin
+		dc_state = dc_norm;
+	end
 
 	gene_pref_t prefix = 32'h0000_0000;
 	rex_t rex = 4'b0000;
@@ -65,7 +73,26 @@ module Decoder (
 		dc_buf_empty = (dc_buf_head == tmp_tail) ? 1 : 0;
 	endfunction
 
+	function logic set_dc_state_on_br();
+		casez (opcode)
+			/* 0x70 ~ 0x7F Jcc */
+			10'b00_0111_????: dc_state <= dc_stall;
+			/* 0x70 ~ 0x7F Jcc */
+			10'b00_0111_????: dc_state <= dc_stall;
+			/* 0xC3 retq */
+			10'b00_1100_0011: dc_state <= dc_stall;
+			/* 0x105 syscall */
+			10'b01_0000_0101: dc_state <= dc_stall;
+
+			default: /* Do nothing */;
+		endcase
+		return 0;
+	endfunction
+
 	always @(posedge clk) begin
+		/* Set decoder state for branch */
+		set_dc_state_on_br();
+
 		/* Put decoded instruction into buffer */
 		if (can_decode && !dc_buf_full()) begin
 			if (num_decoded_uops >= 1) begin
@@ -1496,7 +1523,7 @@ module Decoder (
 	always_comb begin
 		num_decoded_uops = 0;
 
-		if (can_decode && !dc_buf_full()) begin : decoder
+		if (can_decode && !dc_buf_full() && dc_state == dc_norm) begin : decoder
 
 			logic[7:0] next_byte;
 			logic rex_met = 1'b0;
