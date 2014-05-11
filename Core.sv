@@ -140,6 +140,7 @@ module Core (
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
 		if (oprd.t == `OPRD_T_REG || oprd.t == `OPRD_T_STACK)
 			reg_occupies[oprd.r] <= 1;
+
 		return 0;
 	endfunction
 
@@ -172,6 +173,10 @@ module Core (
 		if (dc_df == 1 && df_taken == 1 && !mem_blocked) begin
 			/* we need to set occupation table in always_ff */
 			df_set_reg_conflict(df_uop_tmp.oprd1);
+
+			if (df_uop_tmp.oprd2.t == `OPRD_T_STACK)
+				df_set_reg_conflict(df_uop_tmp.oprd2);
+
 			df_uop <= df_uop_tmp;
 			df_exe <= 1;
 		end
@@ -236,19 +241,38 @@ module Core (
 	logic[63:0] wb_result;
 	logic[63:0] wb_rflags;
 	logic[4:0] reg_num;
+	logic wb_branch;
+	logic[63:0] wb_rip;
 
 	always_ff @ (posedge bus.clk) begin
 		if (mem_wb == 1) begin
-			/*  syscall */
 			if (mem_uop.opcode == 10'b01_0000_0101) begin
-				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
-					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
-					regs[`GPR_R8], regs[`GPR_R9]);
+				/*  syscall */
+				//regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
+					//regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
+					//regs[`GPR_R8], regs[`GPR_R9]);
 				
 			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;
+			end else if (mem_uop.oprd1.t == `OPRD_T_STACK) begin
+				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] + 8;
+				reg_occupies[mem_uop.oprd1.r] <= 0;
+			end else if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
+				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
+				reg_occupies[mem_uop.oprd1.r] <= 0;
+			end
+
+			/* Deal with call/ret */
+			if (mem_uop.opcode == 10'b11_0001_0000) begin
+				/* Call %reg */
+				wb_branch <= 1;
+				wb_rip <= mem_uop.oprd2.value;
+			end else if (mem_uop.opcode == 10'b00_1100_0011) begin
+				/* ret */
+				wb_branch <= 1;
+				wb_rip <= mem_result[63:0];
 			end
 
 `ifdef CORE_DEBUG

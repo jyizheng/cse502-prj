@@ -75,7 +75,7 @@ module Decoder (
 	endfunction
 
 	function logic set_dc_state_on_br();
-		casez (opcode)
+		casez (opcode_tr)
 			/* 0x70 ~ 0x7F Jcc */
 			10'b00_0111_????: dc_state <= dc_stall;
 			/* 0xC3 retq */
