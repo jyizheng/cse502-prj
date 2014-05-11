@@ -90,13 +90,19 @@ module Core (
 	INF inf(clk, if_set_rip, if_new_rip, icache_enable, icache_addr, icache_rdata, icache_done,
 		decode_bytes, decode_rip, bytes_decoded, if_dc, dc_if);
 
-	always_ff @ (posedge bus.clk) begin
+	always_comb begin
 		if (bus.reset) begin
-			if_set_rip <= 1;
-			if_new_rip <= entry;
-		end else if (if_set_rip == 1) begin
-			if_set_rip <= 0;
-			if_new_rip <= 0;
+			if_set_rip = 1;
+			if_new_rip = entry;
+		end else if (wb_branch) begin
+			if_set_rip = 1;
+			if_new_rip = wb_rip;
+		end else if (exe_branch) begin
+			if_set_rip = 1;
+			if_new_rip = exe_rip;
+		end else begin
+			if_set_rip = 0;
+			if_new_rip = 0;
 		end
 	end
 
@@ -108,6 +114,15 @@ module Core (
 	micro_op_t dc_uop;
 	Decoder decoder(clk, if_dc, dc_resume, dc_if, decode_rip, decode_bytes, dc_taken,
 		bytes_decoded, dc_uop, dc_df);
+
+	always_ff @ (posedge bus.clk) begin
+		if (wb_branch) begin
+			dc_resume <= 1;
+		end else if (exe_branch) begin
+			dc_resume <= 1;
+		end else
+			dc_resume <= 0;
+	end
 
 	/* --------------------------------------------------------- */
 	/* Data Fetch & Schedule stage */
@@ -200,8 +215,6 @@ module Core (
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value, df_uop.next_rip,
 		exe_result, exe_rflags, exe_mem, mem_blocked, exe_branch, exe_rip);
 
-	assign dc_resume = exe_branch;
-
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe && !mem_blocked) begin
 			exe_uop <= df_uop;
@@ -259,10 +272,10 @@ module Core (
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;
 			end else if (mem_uop.oprd1.t == `OPRD_T_STACK) begin
-				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] + 8;
+				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 			end else if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
-				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] - 8;
+				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] + 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 			end
 
@@ -299,6 +312,9 @@ module Core (
 			$display("R15 = %x", regs[`GPR_R15]);
 `endif
 
+		end else begin
+			wb_branch <= 0;
+			wb_rip <= 0;
 		end
 	end
 

@@ -100,9 +100,12 @@ module Decoder (
 			assert(dc_state == dc_stall) else $fatal("[DC] resume at non-stall state?");
 
 			dc_state <= dc_norm;
+		end else begin
+			/* Set decoder state for branch */
+			if (can_decode) begin
+				set_dc_state_on_br();
+			end
 		end
-		/* Set decoder state for branch */
-		set_dc_state_on_br();
 	end
 
 	always @(posedge clk) begin
