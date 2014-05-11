@@ -215,18 +215,16 @@ module Core (
 	logic[63:0] mem_rflags;
 	micro_op_t mem_uop;
 
-	Mem mem(clk, exe_mem, mem_exe,
-		exe_uop.oprd1, exe_result, mem_result,
+	Mem mem(clk, exe_mem, mem_exe, mem_wb,
+		exe_uop, exe_result, mem_result,
 		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 
 	always_ff @ (posedge bus.clk) begin
 		if (exe_mem == 1) begin
-			mem_wb <= 1;
 			mem_uop <= exe_uop;
 			mem_rflags <= exe_rflags;
 		end
 		else begin
-			mem_wb <= 0;
 			mem_uop <= 0;
 			mem_rflags <= 0;
 		end
