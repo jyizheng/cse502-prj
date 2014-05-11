@@ -18,8 +18,7 @@ module Decoder (
 	input taken,	// If pipeline has taken the sent instruction
 	output[7:0] bytes_decoded,
 	output micro_op_t out_dc_instr,
-	output dc_df,
-	input df_dc
+	output dc_df
 );
 
 	enum { dc_norm, dc_stall } dc_state;
@@ -31,6 +30,7 @@ module Decoder (
 	gene_pref_t prefix = 32'h0000_0000;
 	rex_t rex = 4'b0000;
 	opcode_t opcode = 0;
+	opcode_t opcode_tr = 0;
 	modrm_t modrm = 9'h00;
 	//sib_t sib = 9'h00;
 	disp_t disp = 0;
@@ -86,6 +86,8 @@ module Decoder (
 			10'b01_0000_0101: dc_state <= dc_stall;
 			/* 0x180 ~ 0x18F Jcc long */
 			10'b01_1000_????: dc_state <= dc_stall;
+			/* 0xFF 010 Call */
+			10'b11_0001_0000: dc_state <= dc_stall;
 
 			default: /* Do nothing */;
 		endcase
@@ -553,10 +555,10 @@ module Decoder (
 			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
 			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
 			/* 60 */
-			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
-			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
-			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
-			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
+			{ `DC_OPRD_SZ_V, `DC_OPRD_T_OP }, { `DC_OPRD_SZ_V, `DC_OPRD_T_OP },
+			{ `DC_OPRD_SZ_V, `DC_OPRD_T_OP }, { `DC_OPRD_SZ_V, `DC_OPRD_T_OP },
+			{ `DC_OPRD_SZ_V, `DC_OPRD_T_OP }, { `DC_OPRD_SZ_V, `DC_OPRD_T_OP },
+			{ `DC_OPRD_SZ_V, `DC_OPRD_T_OP }, { `DC_OPRD_SZ_V, `DC_OPRD_T_OP },
 			/* 58 */
 			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
 			{ `DC_OPRD_SZ_0, `DC_OPRD_T_NONE }, { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE },
@@ -1406,7 +1408,7 @@ module Decoder (
 			decoded_uops[0].next_rip = rip + bytes_decoded;
 
 			decoded_uops[1] = 0;
-			decoded_uops[1].opcode = opcode;
+			decoded_uops[1].opcode = opcode_tr;
 			decoded_uops[1].oprd1.t = `OPRD_T_REG;
 			decoded_uops[1].oprd1.r = `GPR_RM;
 			decoded_uops[1].oprd2 = dc_oprd[1];
@@ -1433,7 +1435,7 @@ module Decoder (
 			decoded_uops[0].next_rip = rip + bytes_decoded;
 
 			decoded_uops[1] = 0;
-			decoded_uops[1].opcode = opcode;
+			decoded_uops[1].opcode = opcode_tr;
 			decoded_uops[1].oprd1 = dc_oprd[0];
 			decoded_uops[1].oprd2.t = `OPRD_T_REG;
 			decoded_uops[1].oprd2.r = `GPR_RM;
@@ -1444,7 +1446,7 @@ module Decoder (
 
 		if (can_decode && (bytes_decoded != 0) && (num_decoded_uops == 0)) begin
 			decoded_uops[0] = 0;
-			decoded_uops[0].opcode = opcode;
+			decoded_uops[0].opcode = opcode_tr;
 			decoded_uops[0].oprd1 = dc_oprd[0];
 			decoded_uops[0].oprd2 = dc_oprd[1];
 			decoded_uops[0].oprd3 = dc_oprd[2];
@@ -1460,10 +1462,10 @@ module Decoder (
 
 		casez (modrm.v.reg_op)
 			3'b001: begin
-				opcode = 10'b11_0000_0001;
+				opcode_tr = 10'b11_0000_0001;
 			end
 			3'b100: begin
-				opcode = 10'b11_0000_0010;
+				opcode_tr = 10'b11_0000_0010;
 			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
@@ -1475,7 +1477,7 @@ module Decoder (
 
 		casez (modrm.v.reg_op)
 			3'b010: begin
-				opcode = 10'b11_0001_0000;
+				opcode_tr = 10'b11_0001_0000;
 			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
@@ -1492,7 +1494,7 @@ module Decoder (
 			10'h083: translate_grp1();
 
 			10'h0FF: translate_grp5();
-			default: /* Do nothing */;
+			default: opcode_tr = opcode;
 		endcase
 
 		translate_opcode = 0;
@@ -1725,15 +1727,23 @@ module Decoder (
 				/* decode */
 				decode_one();
 
-				/* FIXME: Need to handle special opcodes */
+				/* FIXME: Need to handle special opcodes, after this, use opcode_tr */
 				translate_opcode();
 
-				/* XXX: Deal with opcodes interacting with stack */
-				casez (opcode)
-					/* Push/Pop */
-					10'b00_0101_????: begin
+				/* XXX: hacks for special instructions
+				 * 1. Deal with opcodes interacting with stack
+				 * 2. deal with syscall
+				 */
+				casez (opcode_tr)
+					/* Push */
+					10'b00_0101_0???: begin
 						dc_oprd[0].t = `OPRD_T_STACK;
 						dc_oprd[0].r = `GPR_RSP;
+					end
+					/* Pop */
+					10'b00_0101_1???: begin
+						dc_oprd[1].t = `OPRD_T_STACK;
+						dc_oprd[1].r = `GPR_RSP;
 					end
 					/* Call */
 					10'b11_0001_0000: begin
@@ -1744,6 +1754,12 @@ module Decoder (
 					10'b00_1100_0011: begin
 						dc_oprd[0].t = `OPRD_T_STACK;
 						dc_oprd[0].r = `GPR_RSP;
+					end
+
+					/* Syscall, as we execute it at WB, so not need to check RAW (FIXME: superscalar) */
+					10'b01_0000_0101: begin
+						dc_oprd[0].t = `OPRD_T_REG;
+						dc_oprd[0].r = `GPR_RAX;
 					end
 					default: /* Do nothing */;
 				endcase

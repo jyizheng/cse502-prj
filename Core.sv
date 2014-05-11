@@ -107,7 +107,7 @@ module Core (
 	logic dc_resume = 0;
 	micro_op_t dc_uop;
 	Decoder decoder(clk, if_dc, dc_resume, dc_if, decode_rip, decode_bytes, dc_taken,
-		bytes_decoded, dc_uop, dc_df, df_dc);
+		bytes_decoded, dc_uop, dc_df);
 
 	/* --------------------------------------------------------- */
 	/* Data Fetch & Schedule stage */
@@ -120,11 +120,11 @@ module Core (
 
 	/* check register conflict */
 	function logic df_reg_conflict(micro_op_t uop);
-		if (uop.oprd1.t == `OPRD_T_REG)
+		if (uop.oprd1.t == `OPRD_T_REG || uop.oprd1.t == `OPRD_T_STACK)
 			if (reg_occupies[uop.oprd1.r] != 0)
 				return 1;
 
-		if (uop.oprd2.t == `OPRD_T_REG)
+		if (uop.oprd2.t == `OPRD_T_REG || uop.oprd2.t == `OPRD_T_STACK)
 			if (reg_occupies[uop.oprd2.r] != 0)
 				return 1;
 
@@ -138,7 +138,7 @@ module Core (
 	/* This can only be called from alwasy_ff */
 	function logic df_set_reg_conflict(oprd_t oprd);
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
-		if (oprd.t == `OPRD_T_REG)
+		if (oprd.t == `OPRD_T_REG || oprd.t == `OPRD_T_STACK)
 			reg_occupies[oprd.r] <= 1;
 		return 0;
 	endfunction
@@ -151,11 +151,13 @@ module Core (
 
 			/* Retrieve register values
 			* TODO: might need special treatment for special registers */
-			if (df_uop_tmp.oprd1.t == `OPRD_T_REG) begin
+			if (df_uop_tmp.oprd1.t == `OPRD_T_REG ||
+				df_uop_tmp.oprd1.t == `OPRD_T_STACK) begin
 				df_uop_tmp.oprd1.value = regs[df_uop_tmp.oprd1.r];
 			end
 
-			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
+			if (df_uop_tmp.oprd2.t == `OPRD_T_REG ||
+				df_uop_tmp.oprd2.t == `OPRD_T_STACK) begin
 				df_uop_tmp.oprd2.value = regs[df_uop_tmp.oprd2.r];
 			end
 
@@ -231,14 +233,19 @@ module Core (
 
 	/* --------------------------------------------------------- */
 	/* WB stage */
-	logic[127:0] wb_result;
+	logic[63:0] wb_result;
 	logic[63:0] wb_rflags;
-	micro_op_t wb_uop;
 	logic[4:0] reg_num;
 
 	always_ff @ (posedge bus.clk) begin
 		if (mem_wb == 1) begin
-			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
+			/*  syscall */
+			if (mem_uop.opcode == 10'b01_0000_0101) begin
+				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
+					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
+					regs[`GPR_R8], regs[`GPR_R9]);
+				
+			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;

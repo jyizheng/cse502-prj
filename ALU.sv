@@ -91,6 +91,14 @@ module ALU (
 					tmp_result = oprd1 & oprd2;
 				end
 
+				/* 0xFF 010 */
+				10'b11_0001_0000: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd1 + 8;
+				end
+
 				default:
 					$display("[ALU] Unsupported operation %x", opcode);
 			endcase

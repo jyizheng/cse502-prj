@@ -8,6 +8,7 @@
 `define OPRD_T_STACK	4
 
 `define OPRD_R_NONE	5'h1F
+`define OPRD_R_ALL	5'h1E
 
 typedef struct packed {
 	logic[3:0] t;		/* Type */

@@ -59,7 +59,7 @@ module Mem (input clk,
 		end else begin	/* !idle */
 			if (dcache_done) begin
 				mem_state <= mem_idle;
-				mem_result[63:0] <= value;
+				mem_result[63:0] <= dcache_rdata;
 				mem_wb <= 1;
 			end else begin
 				mem_wb <= 0;
@@ -88,9 +88,6 @@ module Mem (input clk,
 		end else if (mem_state == mem_waiting && dcache_done) begin
 			/* XXX: unblock previous stages */
 			mem_blocked = 0;
-			if (mem_op == op_read) begin
-				value = dcache_rdata;
-			end
 		end
 	end
 
