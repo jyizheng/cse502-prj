@@ -27,7 +27,7 @@ module ALU (
 		if (enable) begin
 			casez (opcode)
 				/* 0x00 ~ 0x05 */
-				10'b0000000???: begin
+				10'b00_0000_0???: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1+oprd2);
 `endif
@@ -35,15 +35,23 @@ module ALU (
 				end
 
 				/* 0x08 ~ 0x0F */
-				10'b0000001???: begin
+				10'b00_0000_1???: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
 `endif
 					tmp_result = oprd1 | oprd2;
 				end
 
+				/* 0x31 ~ 0x35 */
+				10'b00_0011_0???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG XOR %x | %x = %x", oprd1, oprd2, oprd1 ^ oprd2);
+`endif
+					tmp_result = oprd1 ^ oprd2;
+				end
+
 				/* 0x88 ~ 0x8B */
-				10'b00100010??: begin
+				10'b00_1000_10??: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
@@ -51,7 +59,15 @@ module ALU (
 				end
 
 				/* 0xB8 ~ 0xBF */
-				10'b0010111???: begin
+				10'b00_1011_1???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
+
+				/* 0xC7 */
+				10'b00_1100_0111: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
@@ -60,11 +76,19 @@ module ALU (
 
 				/* Extensions */
 				/* 0x83 001 */
-				10'b1100000001: begin
+				10'b11_0000_0001: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
 `endif
 					tmp_result = oprd1 | oprd2;
+				end
+
+				/* 0x83 100 */
+				10'b11_0000_0010: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG AND %x & %x = %x", oprd1, oprd2, oprd1 & oprd2);
+`endif
+					tmp_result = oprd1 & oprd2;
 				end
 
 				default:
