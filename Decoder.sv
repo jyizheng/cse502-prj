@@ -1460,12 +1460,24 @@ module Decoder (
 
 		casez (modrm.v.reg_op)
 			3'b001: begin
-				opcode = 10'b1100000001;
+				opcode = 10'b11_0000_0001;
 			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
 
 		translate_grp1 = 0;
+	endfunction
+
+	function translate_grp5();
+
+		casez (modrm.v.reg_op)
+			3'b010: begin
+				opcode = 10'b11_0001_0000;
+			end
+			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
+		endcase
+
+		translate_grp5 = 0;
 	endfunction
 
 	function translate_opcode();
@@ -1475,6 +1487,8 @@ module Decoder (
 			/* Group 1*/
 			10'h081: translate_grp1();
 			10'h083: translate_grp1();
+
+			10'h0FF: translate_grp5();
 			default: /* Do nothing */;
 		endcase
 
@@ -1627,8 +1641,9 @@ module Decoder (
 					/* 0F 3A escape */
 					else if (next_byte == 8'h3A) begin
 						opcode.escape = 2'h11;
-						bytes_decoded += 1;
-						next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
+						//bytes_decoded += 1;
+						//next_byte = decode_bytes[{3'b000, bytes_decoded} * 8 +: 8];
+						$display("[DC] ERR unexpected 3-bytes opcode [%x]", rip);
 					end
 					/* 0F escape */
 					else
@@ -1709,6 +1724,26 @@ module Decoder (
 
 				/* FIXME: Need to handle special opcodes */
 				translate_opcode();
+
+				/* XXX: Deal with opcodes interacting with stack */
+				casez (opcode)
+					/* Push/Pop */
+					10'b00_0101_????: begin
+						dc_oprd[0].t = `OPRD_T_STACK;
+						dc_oprd[0].r = `GPR_RSP;
+					end
+					/* Call */
+					10'b11_0001_0000: begin
+						dc_oprd[0].t = `OPRD_T_STACK;
+						dc_oprd[0].r = `GPR_RSP;
+					end
+					/* Ret */
+					10'b00_1100_0011: begin
+						dc_oprd[0].t = `OPRD_T_STACK;
+						dc_oprd[0].r = `GPR_RSP;
+					end
+					default: /* Do nothing */;
+				endcase
 
 				/* Split uop if necessary */
 				split_uop();
