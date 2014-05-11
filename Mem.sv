@@ -27,6 +27,10 @@ module Mem (input clk,
 	logic[63:0] value;
 
 	always_ff @ (posedge clk) begin
+		if (dcache_en)
+			dcache_en <= 0;
+		if (dcache_wren)
+			dcache_wren <= 0;
 		if (mem_state == mem_idle) begin
 			if (enable) begin
 				if (mem_op == op_read) begin
@@ -58,6 +62,8 @@ module Mem (input clk,
 			end
 		end else begin	/* !idle */
 			if (dcache_done) begin
+				dcache_en <= 0;
+				dcache_wren <= 0;
 				mem_state <= mem_idle;
 				mem_result[63:0] <= dcache_rdata;
 				mem_wb <= 1;

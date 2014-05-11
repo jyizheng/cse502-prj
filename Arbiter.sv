@@ -28,7 +28,8 @@ module Arbiter(Sysbus bus,
 	output ddone
 );
 	enum { bus_idle,
-		bus_d_begin, bus_d_waiting, bus_d_active, bus_d_w_active,
+		bus_d_begin, bus_d_waiting, bus_d_active,
+		bus_d_w_begin, bus_d_w_waiting, bus_d_w_active,
 		bus_i_begin, bus_i_waiting, bus_i_active } bus_state;
 
 	_tag_t reqtag;
@@ -54,11 +55,13 @@ module Arbiter(Sysbus bus,
 
 			/* start a new transfer */
 			if (drequest == 1) begin
-				bus_state <= bus_d_begin;
-				if (dwrenable)
+				if (dwrenable) begin
+					bus_state <= bus_d_w_begin;
 					reqtag.wr <= bus.WRITE;
-				else
+				end else begin
+					bus_state <= bus_d_begin;
 					reqtag.wr <= bus.READ;
+				end
 
 				reqtag.t <= bus.MEMORY;
 				reqtag.priv <= `TAG_PRIV_D;
@@ -81,7 +84,7 @@ module Arbiter(Sysbus bus,
 				ddone <= 1;
 			end
 		end else begin
-			if (bus_state == bus_d_begin) begin
+			if (bus_state == bus_d_begin || bus_state == bus_d_w_begin) begin
 				bus.reqcyc <= 1;
 				bus.req <= daddr;
 				bus.reqtag <= reqtag;
@@ -123,20 +126,18 @@ module Arbiter(Sysbus bus,
 					bus_state <= bus_idle;
 					ddone <= 1;
 				end else if (bus.reqack) begin
-					assert(bus_state == bus_i_begin || bus_state == bus_d_begin) else $fatal;
+					assert(bus_state == bus_i_begin || bus_state == bus_d_begin || bus_state == bus_d_w_begin) else $fatal;
 					if (bus_state == bus_i_begin) begin
 						bus.reqcyc <= 0;
 						bus_state <= bus_i_waiting;
+					end else if (bus_state == bus_d_w_begin) begin
+						/* XXX: for write, we need to keep reqcyc as 1 */
+						bus.reqcyc <= 1;
+						buf_idx <= 8;
+						bus_state <= bus_d_w_active;
 					end else begin
-						if (dwrenable) begin
-							/* XXX: for write, we need to keep reqcyc as 1 */
-							bus.reqcyc <= 1;
-							buf_idx <= 8;
-							bus_state <= bus_d_w_active;
-						end else begin
-							bus.reqcyc <= 0;
-							bus_state <= bus_d_waiting;
-						end
+						bus.reqcyc <= 0;
+						bus_state <= bus_d_waiting;
 					end
 				end
 			end

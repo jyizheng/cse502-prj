@@ -209,8 +209,6 @@ module Core (
 `ifdef CORE_DEBUG
 			$display("[CORE] REG1 = %d REG2 = %d", df_uop.oprd1.r, df_uop.oprd2.r);
 `endif
-		end else begin
-			exe_uop <= 0;
 		end
 	end
 
@@ -229,10 +227,6 @@ module Core (
 		if (exe_mem == 1) begin
 			mem_uop <= exe_uop;
 			mem_rflags <= exe_rflags;
-		end
-		else begin
-			mem_uop <= 0;
-			mem_rflags <= 0;
 		end
 	end
 
@@ -260,7 +254,7 @@ module Core (
 				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] + 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 			end else if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
-				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
+				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] - 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 			end
 
