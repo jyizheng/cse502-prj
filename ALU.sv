@@ -112,9 +112,12 @@ module ALU (
 			result <= tmp_result;
 			rflags <= tmp_rflags;
 			exe_mem <= 1;
-		end
-		else begin
+		end else if (mem_blocked) begin
+			/* Keep the previous value */
+		end else begin
 			exe_mem <= 0;
+			result <= 0;
+			rflags <= 0;
 		end
 	end
 

@@ -203,12 +203,15 @@ module Core (
 	assign dc_resume = exe_branch;
 
 	always_ff @ (posedge bus.clk) begin
-		if (df_exe) begin
-			if (!mem_blocked)
-				exe_uop <= df_uop;
+		if (df_exe && !mem_blocked) begin
+			exe_uop <= df_uop;
 `ifdef CORE_DEBUG
 			$display("[CORE] REG1 = %d REG2 = %d", df_uop.oprd1.r, df_uop.oprd2.r);
 `endif
+		end else if (mem_blocked) begin
+			/* Keep the previous value */
+		end else begin
+			exe_uop <= 0;
 		end
 	end
 
@@ -224,9 +227,14 @@ module Core (
 		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 
 	always_ff @ (posedge bus.clk) begin
-		if (exe_mem == 1) begin
+		if (exe_mem && !mem_blocked) begin
 			mem_uop <= exe_uop;
 			mem_rflags <= exe_rflags;
+		end else if (mem_blocked) begin
+			/* Keep the previous value */
+		end else begin
+			mem_uop <= 0;
+			mem_rflags <= 0;
 		end
 	end
 
@@ -267,6 +275,9 @@ module Core (
 				/* ret */
 				wb_branch <= 1;
 				wb_rip <= mem_result[63:0];
+			end else begin
+				wb_branch <= 0;
+				wb_rip <= 0;
 			end
 
 `ifdef CORE_DEBUG
