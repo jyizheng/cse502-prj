@@ -196,7 +196,7 @@ module Core (
 	assign dc_resume = exe_branch;
 
 	always_ff @ (posedge bus.clk) begin
-		if (df_exe == 1) begin
+		if (df_exe && mem_exe) begin
 			exe_uop <= df_uop;
 `ifdef CORE_DEBUG
 			$display("[CORE] REG1 = %d REG2 = %d", df_uop.oprd1.r, df_uop.oprd2.r);

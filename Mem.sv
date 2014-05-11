@@ -27,8 +27,8 @@ module Mem (input clk,
 	logic[63:0] value;
 
 	always_ff @ (posedge clk) begin
-		if (enable) begin
-			if (mem_state == mem_idle) begin
+		if (mem_state == mem_idle) begin
+			if (enable) begin
 				if (mem_op == op_read) begin
 `ifdef MEM_DEBUG
 					$display("[MEM] reading from %x", addr);
@@ -37,6 +37,8 @@ module Mem (input clk,
 					dcache_en <= 1;
 					dcache_wren <= 0;
 					dcache_addr <= addr;
+					mem_wb <= 0;
+					mem_exe <= 0;
 				end else if (mem_op == op_write) begin
 `ifdef MEM_DEBUG
 					$display("[MEM] writing %x into %x", value, addr);
@@ -46,19 +48,28 @@ module Mem (input clk,
 					dcache_wren <= 1;
 					dcache_addr <= addr;
 					dcache_wdata <= value;
+					mem_wb <= 0;
+					mem_exe <= 0;
 				end else begin
 					/* No need to do memory ops */
 					mem_result <= alu_result;
 					mem_wb <= 1;
+					mem_exe <= 1;
 				end
-			end else begin
-				if (dcache_done) begin
-					mem_state <= mem_idle;
-					mem_result[63:0] <= value;
-				end
+			end else begin	/* !enable */
+					mem_wb <= 0;
+					mem_exe <= 1;
 			end
-		end else begin
-			mem_wb <= 0;
+		end else begin	/* !idle */
+			if (dcache_done) begin
+				mem_state <= mem_idle;
+				mem_result[63:0] <= value;
+				mem_wb <= 1;
+				mem_exe <= 1;
+			end else begin
+				mem_wb <= 0;
+				mem_exe <= 0;
+			end
 		end
 	end
 
