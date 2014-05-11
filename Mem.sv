@@ -4,7 +4,7 @@
 
 module Mem (input clk,
 	input enable,
-	output mem_exe,
+	output mem_blocked,
 	output mem_wb,
 
 	input micro_op_t uop,
@@ -38,7 +38,6 @@ module Mem (input clk,
 					dcache_wren <= 0;
 					dcache_addr <= addr;
 					mem_wb <= 0;
-					mem_exe <= 0;
 				end else if (mem_op == op_write) begin
 `ifdef MEM_DEBUG
 					$display("[MEM] writing %x into %x", value, addr);
@@ -49,26 +48,21 @@ module Mem (input clk,
 					dcache_addr <= addr;
 					dcache_wdata <= value;
 					mem_wb <= 0;
-					mem_exe <= 0;
 				end else begin
 					/* No need to do memory ops */
 					mem_result <= alu_result;
 					mem_wb <= 1;
-					mem_exe <= 1;
 				end
 			end else begin	/* !enable */
 					mem_wb <= 0;
-					mem_exe <= 1;
 			end
 		end else begin	/* !idle */
 			if (dcache_done) begin
 				mem_state <= mem_idle;
 				mem_result[63:0] <= value;
 				mem_wb <= 1;
-				mem_exe <= 1;
 			end else begin
 				mem_wb <= 0;
-				mem_exe <= 0;
 			end
 		end
 	end
@@ -77,14 +71,23 @@ module Mem (input clk,
 		mem_op = op_none;
 		if (enable && mem_state == mem_idle) begin
 			if (uop.oprd1.t == `OPRD_T_MEM) begin
+				/* XXX: block previous stages */
+				mem_blocked = 1;
 				mem_op = op_write;
 				addr = uop.oprd1.ext;
 				value = alu_result[63:0];
 			end else if (uop.oprd2.t == `OPRD_T_MEM) begin
+				/* XXX: block previous stages */
+				mem_blocked = 1;
 				mem_op = op_read;
 				addr = uop.oprd1.ext;
+			end else begin
+				/* No mem operation, unblock previous stages */
+				mem_blocked = 0;
 			end
 		end else if (mem_state == mem_waiting && dcache_done) begin
+			/* XXX: unblock previous stages */
+			mem_blocked = 0;
 			if (mem_op == op_read) begin
 				value = dcache_rdata;
 			end

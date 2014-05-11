@@ -6,7 +6,6 @@
 module ALU (
 	input clk,
 	input enable,
-	output exe_df,
 	input opcode_t opcode,
 	input[63:0] oprd1,
 	input[63:0] oprd2,
@@ -15,7 +14,7 @@ module ALU (
 	output[127:0] result,
 	output[63:0] rflags,
 	output exe_mem,
-	input mem_exe,
+	input mem_blocked,
 
 	/* For branch */
 	output branch,
@@ -77,7 +76,7 @@ module ALU (
 	always @ (posedge clk) begin
 		/* TODO: deal with flags */
 
-		if (enable == 1) begin
+		if (enable == 1 && !mem_blocked) begin
 			result <= tmp_result;
 			rflags <= tmp_rflags;
 			exe_mem <= 1;

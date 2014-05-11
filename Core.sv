@@ -116,7 +116,7 @@ module Core (
 	micro_op_t df_uop;
 	micro_op_t df_uop_tmp;
 	logic df_exe;
-	logic exe_df;
+	logic mem_blocked;
 
 	/* check register conflict */
 	function logic df_reg_conflict(micro_op_t uop);
@@ -145,7 +145,7 @@ module Core (
 
 	always_comb begin
 		df_taken = 0;
-		if (dc_df == 1 && !df_reg_conflict(dc_uop)) begin
+		if (dc_df == 1 && !df_reg_conflict(dc_uop) && !mem_blocked) begin
 			df_taken = 1;
 			df_uop_tmp = dc_uop;
 
@@ -167,7 +167,7 @@ module Core (
 	end
 
 	always_ff @ (posedge bus.clk) begin
-		if (dc_df == 1 && df_taken == 1) begin
+		if (dc_df == 1 && df_taken == 1 && !mem_blocked) begin
 			/* we need to set occupation table in always_ff */
 			df_set_reg_conflict(df_uop_tmp.oprd1);
 			df_uop <= df_uop_tmp;
@@ -189,20 +189,20 @@ module Core (
 	logic exe_branch;
 	logic exe_rip;
 
-	ALU alu(clk, df_exe, exe_df,
+	ALU alu(clk, df_exe,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value, df_uop.next_rip,
-		exe_result, exe_rflags, exe_mem, mem_exe, exe_branch, exe_rip);
+		exe_result, exe_rflags, exe_mem, mem_blocked, exe_branch, exe_rip);
 
 	assign dc_resume = exe_branch;
 
 	always_ff @ (posedge bus.clk) begin
-		if (df_exe && mem_exe) begin
-			exe_uop <= df_uop;
+		if (df_exe) begin
+			if (!mem_blocked)
+				exe_uop <= df_uop;
 `ifdef CORE_DEBUG
 			$display("[CORE] REG1 = %d REG2 = %d", df_uop.oprd1.r, df_uop.oprd2.r);
 `endif
-		end
-		else begin
+		end else begin
 			exe_uop <= 0;
 		end
 	end
@@ -210,12 +210,11 @@ module Core (
 	/* --------------------------------------------------------- */
 	/* MEM stage */
 	logic mem_wb;
-	logic wb_mem;
 	logic[127:0] mem_result;
 	logic[63:0] mem_rflags;
 	micro_op_t mem_uop;
 
-	Mem mem(clk, exe_mem, mem_exe, mem_wb,
+	Mem mem(clk, exe_mem, mem_blocked, mem_wb,
 		exe_uop, exe_result, mem_result,
 		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 
