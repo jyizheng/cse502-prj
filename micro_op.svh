@@ -15,6 +15,7 @@ typedef struct packed {
 	oprd_t oprd1;
 	oprd_t oprd2;
 	oprd_t oprd3;
+	logic[63:0] next_rip;
 } micro_op_t;
 
 `endif

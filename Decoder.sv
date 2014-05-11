@@ -11,6 +11,7 @@
 module Decoder (
 	input clk,
 	input can_decode,
+	input dc_resume,
 	output dc_if,
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
@@ -77,22 +78,32 @@ module Decoder (
 		casez (opcode)
 			/* 0x70 ~ 0x7F Jcc */
 			10'b00_0111_????: dc_state <= dc_stall;
-			/* 0x70 ~ 0x7F Jcc */
-			10'b00_0111_????: dc_state <= dc_stall;
 			/* 0xC3 retq */
 			10'b00_1100_0011: dc_state <= dc_stall;
+			/* 0xEB JMP */
+			10'b00_1110_1011: dc_state <= dc_stall;
 			/* 0x105 syscall */
 			10'b01_0000_0101: dc_state <= dc_stall;
+			/* 0x180 ~ 0x18F Jcc long */
+			10'b01_1000_????: dc_state <= dc_stall;
 
 			default: /* Do nothing */;
 		endcase
 		return 0;
 	endfunction
 
-	always @(posedge clk) begin
+	/* Branch related stuff */
+	always_ff @ (posedge clk) begin
+		if (dc_resume) begin
+			assert(dc_state == dc_stall) else $fatal("[DC] resume at non-stall state?");
+
+			dc_state <= dc_norm;
+		end
 		/* Set decoder state for branch */
 		set_dc_state_on_br();
+	end
 
+	always @(posedge clk) begin
 		/* Put decoded instruction into buffer */
 		if (can_decode && !dc_buf_full()) begin
 			if (num_decoded_uops >= 1) begin
@@ -1392,18 +1403,21 @@ module Decoder (
 			decoded_uops[0].oprd1.t = `OPRD_T_REG;
 			decoded_uops[0].oprd1.r = `GPR_RM;
 			decoded_uops[0].oprd2 = dc_oprd[0];
+			decoded_uops[0].next_rip = rip + bytes_decoded;
 
 			decoded_uops[1] = 0;
 			decoded_uops[1].opcode = opcode;
 			decoded_uops[1].oprd1.t = `OPRD_T_REG;
 			decoded_uops[1].oprd1.r = `GPR_RM;
 			decoded_uops[1].oprd2 = dc_oprd[1];
+			decoded_uops[1].next_rip = rip + bytes_decoded;
 
 			decoded_uops[2] = 0;
-			decoded_uops[0].opcode.opcode = 7'h48;
+			decoded_uops[2].opcode.opcode = 7'h48;
 			decoded_uops[2].oprd1 = dc_oprd[0];
 			decoded_uops[2].oprd2.t = `OPRD_T_REG;
 			decoded_uops[2].oprd2.r = `GPR_RM;
+			decoded_uops[2].next_rip = rip + bytes_decoded;
 
 			num_decoded_uops = 3;
 		end
@@ -1416,12 +1430,14 @@ module Decoder (
 			decoded_uops[0].oprd1.t = `OPRD_T_REG;
 			decoded_uops[0].oprd1.r = `GPR_RM;
 			decoded_uops[0].oprd2 = dc_oprd[1];
+			decoded_uops[0].next_rip = rip + bytes_decoded;
 
 			decoded_uops[1] = 0;
 			decoded_uops[1].opcode = opcode;
 			decoded_uops[1].oprd1 = dc_oprd[0];
 			decoded_uops[1].oprd2.t = `OPRD_T_REG;
 			decoded_uops[1].oprd2.r = `GPR_RM;
+			decoded_uops[1].next_rip = rip + bytes_decoded;
 
 			num_decoded_uops = 2;
 		end
@@ -1432,6 +1448,7 @@ module Decoder (
 			decoded_uops[0].oprd1 = dc_oprd[0];
 			decoded_uops[0].oprd2 = dc_oprd[1];
 			decoded_uops[0].oprd3 = dc_oprd[2];
+			decoded_uops[0].next_rip = rip + bytes_decoded;
 
 			num_decoded_uops = 1;
 		end

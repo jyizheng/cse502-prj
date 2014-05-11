@@ -1,4 +1,5 @@
 `include "instruction.svh"
+`include "gpr.svh"
 
 `define ALU_DEBUG 1
 
@@ -10,12 +11,18 @@ module ALU (
 	input[63:0] oprd1,
 	input[63:0] oprd2,
 	input[63:0] oprd3,
+	input[63:0] next_rip,
 	output[127:0] result,
-	output[63:0] flags,
+	output[63:0] rflags,
 	output exe_mem,
-	input mem_exe
+	input mem_exe,
+
+	/* For branch */
+	output branch,
+	output[63:0] branch_rip
 );
 	logic[127:0] tmp_result;
+	logic[63:0] tmp_rflags;
 
 	always_comb begin
 		if (enable) begin
@@ -72,10 +79,60 @@ module ALU (
 
 		if (enable == 1) begin
 			result <= tmp_result;
+			rflags <= tmp_rflags;
 			exe_mem <= 1;
 		end
 		else begin
 			exe_mem <= 0;
+		end
+	end
+
+	function logic condition_true(logic[7:0] cond);
+		case (cond)
+			8'h00: return rflags[`RF_OF];
+			8'h01: return !rflags[`RF_OF];
+			8'h02: return rflags[`RF_CF];
+			8'h03: return !rflags[`RF_CF];
+			8'h04: return rflags[`RF_ZF];
+			8'h05: return !rflags[`RF_ZF];
+			8'h06: return (rflags[`RF_ZF] | rflags[`RF_CF]);
+			8'h07: return !(rflags[`RF_ZF] | rflags[`RF_CF]);
+			8'h08: return rflags[`RF_SF];
+			8'h09: return !rflags[`RF_SF];
+			8'h0A: return rflags[`RF_PF];
+			8'h0B: return !rflags[`RF_PF];
+			8'h0C: return (rflags[`RF_SF] != rflags[`RF_OF]);
+			8'h0D: return (rflags[`RF_SF] == rflags[`RF_OF]);
+			8'h0E: return (rflags[`RF_ZF] | (rflags[`RF_SF] != rflags[`RF_OF]));
+			8'h0F: return !(rflags[`RF_ZF] | (rflags[`RF_SF] != rflags[`RF_OF]));
+			default: $display("[ALU] ERR unknown condition [%x]", cond);
+		endcase
+	endfunction
+
+	/* Branched, we don't deal with call/retq here */
+	always @ (posedge clk) begin
+		if (enable == 1) begin
+			casez (opcode)
+				/* 0x70 ~ 0x7F Jcc */
+				10'b00_0111_????: begin
+					branch <= 1;
+					if (condition_true({4'b0,opcode.opcode[3:0]})) begin
+					end
+				end
+				/* 0xEB JMP */
+				10'b00_1110_1011: begin
+					branch <= 1;
+				end
+				/* 0x180 ~ 0x18F Jcc long */
+				10'b01_1000_????: begin
+					branch <= 1;
+					if (condition_true({4'b0,opcode.opcode[3:0]})) begin
+					end
+				end
+				default: begin
+					branch <= 0;
+				end
+			endcase
 		end
 	end
 

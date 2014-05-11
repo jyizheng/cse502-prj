@@ -29,12 +29,19 @@ module Core (
 	/* Data defines */
 	logic[63:0] regs[`GLB_REG_NUM:0];
 	logic[32:0] reg_occupies;
+	logic[63:0] rflags;
 
 	/* Data initialization */
-	initial begin
-		for (int i = 0; i < `GLB_REG_NUM; i += 1)
-			regs[i] = 0;
-		reg_occupies = 0;
+	always_ff @ (posedge bus.clk) begin
+		if (bus.reset) begin
+			for (int i = 0; i < `GLB_REG_NUM; i += 1)
+				regs[i] <= 0;
+
+			reg_occupies <= 0;
+
+			/* initialize RSP to 0x7C00 */
+			regs[`GPR_RSP] <= 64'h7C00;
+		end
 	end
 
 	/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -97,8 +104,9 @@ module Core (
 	/* Decode stage */
 	logic dc_taken = 0;
 	logic dc_df = 0;
+	logic dc_resume = 0;
 	micro_op_t dc_uop;
-	Decoder decoder(clk, if_dc, dc_if, decode_rip, decode_bytes, dc_taken,
+	Decoder decoder(clk, if_dc, dc_resume, dc_if, decode_rip, decode_bytes, dc_taken,
 		bytes_decoded, dc_uop, dc_df, df_dc);
 
 	/* --------------------------------------------------------- */
@@ -175,13 +183,17 @@ module Core (
 	/* EXE stage */
 	logic exe_mem;
 	logic[127:0] exe_result;
-	logic[63:0] exe_flags;
-	logic[63:0] exe_flags_tmp;
+	logic[63:0] exe_rflags;
 	micro_op_t exe_uop;
 
+	logic exe_branch;
+	logic exe_rip;
+
 	ALU alu(clk, df_exe, exe_df,
-		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value,
-		exe_result, exe_flags_tmp, exe_mem, mem_exe);
+		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value, df_uop.next_rip,
+		exe_result, exe_rflags, exe_mem, mem_exe, exe_branch, exe_rip);
+
+	assign dc_resume = exe_branch;
 
 	always_ff @ (posedge bus.clk) begin
 		if (df_exe == 1) begin
@@ -200,7 +212,7 @@ module Core (
 	logic mem_wb;
 	logic wb_mem;
 	logic[127:0] mem_result;
-	logic[63:0] mem_flags;
+	logic[63:0] mem_rflags;
 	micro_op_t mem_uop;
 
 	Mem mem(clk, exe_mem, mem_exe,
@@ -211,19 +223,19 @@ module Core (
 		if (exe_mem == 1) begin
 			mem_wb <= 1;
 			mem_uop <= exe_uop;
-			mem_flags <= exe_flags;
+			mem_rflags <= exe_rflags;
 		end
 		else begin
 			mem_wb <= 0;
 			mem_uop <= 0;
-			mem_flags <= 0;
+			mem_rflags <= 0;
 		end
 	end
 
 	/* --------------------------------------------------------- */
 	/* WB stage */
 	logic[127:0] wb_result;
-	logic[63:0] wb_flags;
+	logic[63:0] wb_rflags;
 	micro_op_t wb_uop;
 	logic[4:0] reg_num;
 
@@ -266,6 +278,7 @@ module Core (
 
 	//cse502 : Use the following as a guide to print the Register File contents.
 	final begin
+		$display("RFLAGS = %x", rflags);
 		$display("RAX = %x", regs[`GPR_RAX]);
 		$display("RBX = %x", regs[`GPR_RBX]);
 		$display("RCX = %x", regs[`GPR_RCX]);
