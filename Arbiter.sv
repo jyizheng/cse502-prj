@@ -28,7 +28,7 @@ module Arbiter(Sysbus bus,
 	output ddone
 );
 	enum { bus_idle,
-		bus_d_begin, bus_d_waiting, bus_d_active,
+		bus_d_begin, bus_d_waiting, bus_d_active, bus_d_w_active,
 		bus_i_begin, bus_i_waiting, bus_i_active } bus_state;
 
 	_tag_t reqtag;
@@ -69,6 +69,17 @@ module Arbiter(Sysbus bus,
 				reqtag.priv <= `TAG_PRIV_I;
 			end
 
+		end else if (bus_state == bus_d_w_active) begin
+			if (buf_idx > 0) begin
+				bus.reqcyc <= 1;
+				bus.req <= dwdata[(8-buf_idx)*64+:64];
+				buf_idx <= buf_idx-1;
+			end else begin
+				bus.reqcyc <= 0;
+				bus.req <= 0;
+				bus_state <= bus_idle;
+				ddone <= 1;
+			end
 		end else begin
 			if (bus_state == bus_d_begin) begin
 				bus.reqcyc <= 1;
@@ -113,11 +124,20 @@ module Arbiter(Sysbus bus,
 					ddone <= 1;
 				end else if (bus.reqack) begin
 					assert(bus_state == bus_i_begin || bus_state == bus_d_begin) else $fatal;
-					bus.reqcyc <= 0;
-					if (bus_state == bus_i_begin)
+					if (bus_state == bus_i_begin) begin
+						bus.reqcyc <= 0;
 						bus_state <= bus_i_waiting;
-					else
-						bus_state <= bus_d_waiting;
+					end else begin
+						if (dwrenable) begin
+							/* XXX: for write, we need to keep reqcyc as 1 */
+							bus.reqcyc <= 1;
+							buf_idx <= 8;
+							bus_state <= bus_d_w_active;
+						end else begin
+							bus.reqcyc <= 0;
+							bus_state <= bus_d_waiting;
+						end
+					end
 				end
 			end
 		end
