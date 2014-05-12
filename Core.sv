@@ -263,9 +263,9 @@ module Core (
 		if (mem_wb == 1) begin
 			if (mem_uop.opcode == 10'b01_0000_0101) begin
 				/*  syscall */
-				//regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
-					//regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
-					//regs[`GPR_R8], regs[`GPR_R9]);
+				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
+					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
+					regs[`GPR_R8], regs[`GPR_R9]);
 				
 			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
@@ -288,6 +288,10 @@ module Core (
 				/* ret */
 				wb_branch <= 1;
 				wb_rip <= mem_result[63:0];
+			end else if (mem_uop.opcode == 10'b01_0000_0101) begin
+				/* syscall */
+				wb_branch <= 1;
+				wb_rip <= mem_uop.next_rip;
 			end else begin
 				wb_branch <= 0;
 				wb_rip <= 0;

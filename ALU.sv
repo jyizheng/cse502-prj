@@ -74,6 +74,15 @@ module ALU (
 					tmp_result = oprd2;
 				end
 
+				/* 0x105 */
+				10'b01_0000_0101: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG syscall");
+`endif
+					/* Do nothing */
+				end
+
+
 				/* Extensions */
 				/* 0x83 001 */
 				10'b11_0000_0001: begin
