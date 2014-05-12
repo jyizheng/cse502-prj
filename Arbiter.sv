@@ -15,12 +15,14 @@ module Arbiter(Sysbus bus,
 
 	/* For instruction cache */
 	input irequest,
+	output ireqack,
 	input[63:0] iaddr,
 	output[64*8-1:0] idata,
 	output idone,
 
 	/* For data cache */
 	input drequest,
+	output dreqack,
 	input dwrenable,
 	input[63:0] daddr,
 	output[64*8-1:0] drdata,
@@ -40,6 +42,14 @@ module Arbiter(Sysbus bus,
 	assign bus.respack = bus.respcyc; // always able to accept response
 
 	always_ff @ (posedge bus.clk) begin
+		if (dreqack)
+			dreqack <= 0;
+
+		if (ireqack)
+			ireqack <= 0;
+	end
+
+	always_ff @ (posedge bus.clk) begin
 		if (bus.reset) begin
 			bus_state <= bus_idle;
 			idone <= 0;
@@ -48,9 +58,12 @@ module Arbiter(Sysbus bus,
 			bus.reqcyc <= 0;
 			bus.req <= 0;
 			bus.reqtag <= 0;
+			ireqack <= 0;
 			idone <= 0;
-			idone <= 0;
+			idata <= 0;
+			dreqack <= 0;
 			ddone <= 0;
+			drdata <= 0;
 			buf_idx <= 0;
 
 			/* start a new transfer */
@@ -63,9 +76,11 @@ module Arbiter(Sysbus bus,
 					reqtag.wr <= bus.READ;
 				end
 
+				dreqack <= 1;
 				reqtag.t <= bus.MEMORY;
 				reqtag.priv <= `TAG_PRIV_D;
 			end else if (irequest == 1) begin
+				ireqack <= 1;
 				bus_state <= bus_i_begin;
 				reqtag.wr <= bus.READ;
 				reqtag.t <= bus.MEMORY;

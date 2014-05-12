@@ -47,10 +47,12 @@ module Core (
 	/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 	/* Memory arbiter and cache */
 	logic irequest;
+	logic ireqack;
 	logic[63:0] iaddr;
 	logic[64*8-1:0] idata;
 	logic idone;
 	logic drequest;
+	logic dreqack;
 	logic dwrenable;
 	logic[63:0] daddr;
 	logic[64*8-1:0] drdata;
@@ -58,15 +60,15 @@ module Core (
 	logic ddone;
 
 	Arbiter arbiter(bus,
-		irequest, iaddr, idata, idone,
-		drequest, dwrenable, daddr, drdata, dwdata, ddone);
+		irequest, ireqack, iaddr, idata, idone,
+		drequest, dreqack, dwrenable, daddr, drdata, dwdata, ddone);
 
 	logic icache_enable;
 	logic[63:0] icache_addr;
 	logic[511:0] icache_rdata;
 	logic icache_done;
 	ICache icache(clk, icache_enable, icache_addr, icache_rdata, icache_done,
-		irequest, iaddr, idata, idone);
+		irequest, ireqack, iaddr, idata, idone);
 
 	logic dcache_enable;
 	logic dcache_wenable;
@@ -76,7 +78,7 @@ module Core (
 	logic dcache_done;
 	DCache dcache(clk,
 		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done,
-		drequest, dwrenable, daddr, drdata, dwdata, ddone);
+		drequest, dreqack, dwrenable, daddr, drdata, dwdata, ddone);
 
 	/* --------------------------------------------------------- */
 	/* Instruction-Fetch stage */

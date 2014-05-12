@@ -8,6 +8,7 @@ module DCache(input clk,
 	output done,
 
 	output drequest,
+	input dreqack,
 	output dwrenable,
 	output[63:0] daddr,
 	input[64*8-1:0] drdata,
@@ -42,16 +43,20 @@ module DCache(input clk,
 				dwdata <= 0;
 			end
 		end else if (state == state_r_wait) begin
-			drequest <= 0;
-			dwrenable <= 0;
+			if (dreqack) begin
+				drequest <= 0;
+				dwrenable <= 0;
+			end
 			if (ddone) begin
 				state <= state_idle;
 				rdata <= drdata;
 				done <= 1;
 			end
 		end else if (state == state_w_r_wait) begin
-			drequest <= 0;
-			dwrenable <= 0;
+			if (dreqack) begin
+				drequest <= 0;
+				dwrenable <= 0;
+			end
 
 			if (ddone) begin
 				state <= state_w_wait;
@@ -63,8 +68,10 @@ module DCache(input clk,
 			end
 
 		end else if (state == state_w_wait) begin
-			drequest <= 0;
-			dwrenable <= 0;
+			if (dreqack) begin
+				drequest <= 0;
+				dwrenable <= 0;
+			end
 
 			if (ddone) begin
 				state <= state_idle;

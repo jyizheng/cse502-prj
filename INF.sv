@@ -22,7 +22,7 @@ module INF(input clk,
 		initialized = 0;
 	end
 
-	enum { fetch_idle, fetch_waiting, fetch_active } fetch_state;
+	enum { fetch_idle, fetch_waiting, fetch_active, fetch_rst_waiting } fetch_state;
 	logic[63:0] fetch_rip;
 	logic[5:0] fetch_skip;
 	logic[6:0] fetch_offset, decode_offset;
@@ -42,7 +42,6 @@ module INF(input clk,
 	always @ (posedge clk) begin
 		if (set_rip) begin
 			initialized <= 1;
-			fetch_state <= fetch_idle;
 			decode_rip <= new_rip;
 			fetch_rip <= new_rip & ~63;
 			fetch_skip <= new_rip[5:0];
@@ -50,13 +49,19 @@ module INF(input clk,
 
 			decode_offset <= 0;
 			decode_buffer <= 0;
+			if (fetch_state != fetch_idle) begin
+				fetch_state <= fetch_rst_waiting;
+			end
 		end else begin
-			if (fetch_state == fetch_waiting) begin
+			if (fetch_state == fetch_rst_waiting) begin
+				if (ic_done)
+					fetch_state <= fetch_idle;
+			end else if (fetch_state == fetch_waiting) begin
 				ic_enable <= 0;
 				if (ic_done == 1) begin
 					int first_bytes = 8 - fetch_skip[2:0];
 					int skip_words = fetch_skip[5:3] + 1;
-					$display("fetch_skip = %x first_bytes = %x skip_words = %x", fetch_skip, first_bytes, skip_words);
+					//$display("fetch_skip = %x first_bytes = %x skip_words = %x", fetch_skip, first_bytes, skip_words);
 					/* copy the first (might) un-aligned 8 bytes */
 					for (int i = 0; i < first_bytes; i += 1) begin
 						decode_buffer[i*8+:8] <= idata[(skip_words-1)*64+(first_bytes-1-i)*8+:9];

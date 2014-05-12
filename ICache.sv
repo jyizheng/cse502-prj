@@ -6,6 +6,7 @@ module ICache(input clk,
 	output done,
 
 	output irequest,
+	input ireqack,
 	output[63:0] iaddr,
 	input[511:0] idata,
 	input idone
@@ -25,7 +26,8 @@ module ICache(input clk,
 				iaddr <= addr;
 			end
 		end else begin // !state_idle
-			irequest <= 0;
+			if (ireqack)
+				irequest <= 0;
 
 			if (idone) begin
 				state <= state_idle;
