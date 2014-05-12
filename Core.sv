@@ -169,19 +169,21 @@ module Core (
 
 			/* Retrieve register values
 			* TODO: might need special treatment for special registers */
-			if (df_uop_tmp.oprd1.t == `OPRD_T_REG ||
-				df_uop_tmp.oprd1.t == `OPRD_T_STACK) begin
+			if (df_uop_tmp.oprd1.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd1.value = regs[df_uop_tmp.oprd1.r];
+			end else if (df_uop_tmp.oprd1.t == `OPRD_T_STACK) begin
+				df_uop_tmp.oprd1.ext = regs[df_uop_tmp.oprd1.r];
 			end
 
-			if (df_uop_tmp.oprd2.t == `OPRD_T_REG ||
-				df_uop_tmp.oprd2.t == `OPRD_T_STACK) begin
+			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd2.value = regs[df_uop_tmp.oprd2.r];
+			end else if (df_uop_tmp.oprd2.t == `OPRD_T_STACK) begin
+				df_uop_tmp.oprd2.ext = regs[df_uop_tmp.oprd2.r];
 			end
 
 			/* FIXME: need oprd3? */
 			if (df_uop_tmp.oprd3.t == `OPRD_T_REG) begin
-				df_uop_tmp.oprd3.value = regs[df_uop_tmp.oprd3.r];
+				df_uop_tmp.oprd3.ext = regs[df_uop_tmp.oprd3.r];
 			end
 		end
 	end

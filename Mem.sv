@@ -91,13 +91,13 @@ module Mem (input clk,
 				/* Writing into stack */
 				mem_blocked = 1;
 				mem_op = op_write;
-				addr = uop.oprd1.value - 8;
+				addr = uop.oprd1.ext - 8;
 				value = alu_result[63:0];
 			end else if (uop.oprd2.t == `OPRD_T_STACK) begin
 				/* Reading from stack */
 				mem_blocked = 1;
 				mem_op = op_read;
-				addr = uop.oprd2.value;
+				addr = uop.oprd2.ext;
 				value = alu_result[63:0];
 			end else begin
 				/* No mem operation, unblock previous stages */

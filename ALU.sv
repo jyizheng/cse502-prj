@@ -113,7 +113,7 @@ module ALU (
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
 `endif
-					tmp_result = oprd2;
+					tmp_result = oprd1;
 				end
 
 				default:

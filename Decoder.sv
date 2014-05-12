@@ -1752,6 +1752,9 @@ module Decoder (
 					10'b11_0001_0000: begin
 						dc_oprd[0].t = `OPRD_T_STACK;
 						dc_oprd[0].r = `GPR_RSP;
+						dc_oprd[0].value = rip + bytes_decoded;
+						$display("oprd 1 %x %x %x %x", dc_oprd[0].t, dc_oprd[0].r, dc_oprd[0].ext, dc_oprd[0].value);
+						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
 					end
 					/* Ret */
 					10'b00_1100_0011: begin
