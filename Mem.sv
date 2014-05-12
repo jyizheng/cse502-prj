@@ -66,6 +66,9 @@ module Mem (input clk,
 				dcache_wren <= 0;
 				mem_state <= mem_idle;
 				mem_result[63:0] <= dcache_rdata;
+`ifdef MEM_DEBUG
+				$display("[MEM] reading value %x", dcache_rdata);
+`endif
 				mem_wb <= 1;
 			end else begin
 				mem_wb <= 0;
@@ -98,7 +101,7 @@ module Mem (input clk,
 				mem_blocked = 1;
 				mem_op = op_read;
 				addr = uop.oprd2.ext;
-				value = alu_result[63:0];
+				$display("[MEM] oprd 2 %x %x %x %x", uop.oprd2.t, uop.oprd2.r, uop.oprd2.ext, uop.oprd2.value);
 			end else begin
 				/* No mem operation, unblock previous stages */
 				mem_blocked = 0;

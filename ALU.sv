@@ -71,6 +71,7 @@ module ALU (
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG RET");
 `endif
+					/* Do nothing */
 				end
 
 
