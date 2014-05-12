@@ -138,6 +138,7 @@ module Arbiter(Sysbus bus,
 					idone <= 1;
 					idata <= bus_buf;
 				end else if (bus_state == bus_d_active) begin
+					drdata <= bus_buf;
 					bus_state <= bus_idle;
 					ddone <= 1;
 				end else if (bus.reqack) begin
@@ -148,7 +149,8 @@ module Arbiter(Sysbus bus,
 					end else if (bus_state == bus_d_w_begin) begin
 						/* XXX: for write, we need to keep reqcyc as 1 */
 						bus.reqcyc <= 1;
-						buf_idx <= 8;
+						bus.req <= dwdata[0+:64];
+						buf_idx <= 7;
 						bus_state <= bus_d_w_active;
 					end else begin
 						bus.reqcyc <= 0;

@@ -66,6 +66,14 @@ module ALU (
 					tmp_result = oprd2;
 				end
 
+				/* 0xC3 */
+				10'b00_1100_0011: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG RET");
+`endif
+				end
+
+
 				/* 0xC7 */
 				10'b00_1100_0111: begin
 `ifdef ALU_DEBUG

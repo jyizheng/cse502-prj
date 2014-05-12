@@ -110,7 +110,7 @@ module Decoder (
 
 	always @(posedge clk) begin
 		/* Put decoded instruction into buffer */
-		if (can_decode && !dc_buf_full()) begin
+		if (can_decode && !dc_buf_full() && dc_state == dc_norm) begin
 			if (num_decoded_uops >= 1) begin
 				dc_buf[dc_buf_head[3:0]] <= decoded_uops[0];
 			end
@@ -1755,8 +1755,8 @@ module Decoder (
 					end
 					/* Ret */
 					10'b00_1100_0011: begin
-						dc_oprd[0].t = `OPRD_T_STACK;
-						dc_oprd[0].r = `GPR_RSP;
+						dc_oprd[1].t = `OPRD_T_STACK;
+						dc_oprd[1].r = `GPR_RSP;
 					end
 
 					/* Syscall, as we execute it at WB, so not need to check RAW (FIXME: superscalar) */

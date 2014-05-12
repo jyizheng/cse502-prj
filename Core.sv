@@ -263,13 +263,16 @@ module Core (
 
 	always_ff @ (posedge bus.clk) begin
 		if (mem_wb == 1) begin
+			/* Special operations */
 			if (mem_uop.opcode == 10'b01_0000_0101) begin
 				/*  syscall */
 				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
 					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
 					regs[`GPR_R8], regs[`GPR_R9]);
-				
-			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
+			end
+
+			/* Clear target reg occupation */
+			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;

@@ -15,6 +15,8 @@ module DCache(input clk,
 	output[64*8-1:0] dwdata,
 	input ddone
 );
+
+	logic[63:0] addr_buf;
 	logic[64*8-1:0] dc_buf;
 	logic[7:0] buf_idx;
 
@@ -49,7 +51,7 @@ module DCache(input clk,
 			end
 			if (ddone) begin
 				state <= state_idle;
-				rdata <= drdata;
+				rdata <= drdata[{3'b000,addr[5:0]}*8+:64];
 				done <= 1;
 			end
 		end else if (state == state_w_r_wait) begin
@@ -84,8 +86,8 @@ module DCache(input clk,
 	end
 
 	always_comb begin
-		if (wen && (state == state_r_wait) && ddone) begin
-			logic[8:0] offset = { 3'b00, addr[5:0] };
+		if ((state == state_w_r_wait) && ddone) begin
+			logic[8:0] offset = { 3'b000, addr[5:0] };
 			dc_buf = drdata;
 			dc_buf[offset*8+:64] = wdata;
 		end
