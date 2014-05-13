@@ -149,6 +149,13 @@ module ALU (
 					/* Do nothing */
 				end
 
+				/* 0x180 ~ 0x18F */
+				10'b01_1000_????: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
 
 				/* Extensions */
 				/* 0x83 000 */
@@ -266,8 +273,12 @@ module ALU (
 				end
 				/* 0x180 ~ 0x18F Jcc long */
 				10'b01_1000_????: begin
-					branch <= 1;
 					if (condition_true({4'b0,opcode.opcode[3:0]})) begin
+						branch <= 1;
+						branch_rip <= oprd2 + next_rip;
+					end else begin
+						branch <= 1;
+						branch_rip <= next_rip;
 					end
 				end
 				default: begin
