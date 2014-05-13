@@ -26,6 +26,8 @@ module Mem (input clk,
 	logic[63:0] rip;
 	assign rip = uop.next_rip;
 
+	logic[127:0] tmp_mem_result;
+
 	logic[63:0] addr;
 	logic[63:0] value;
 
@@ -57,7 +59,7 @@ module Mem (input clk,
 					mem_wb <= 0;
 				end else begin
 					/* No need to do memory ops */
-					mem_result <= alu_result;
+					mem_result <= tmp_mem_result;
 					mem_wb <= 1;
 				end
 			end else begin	/* !enable */
@@ -82,7 +84,12 @@ module Mem (input clk,
 	always_comb begin
 		mem_op = op_none;
 		if (enable && mem_state == mem_idle) begin
-			if (uop.oprd1.t == `OPRD_T_MEM) begin
+			if (uop.opcode == 10'h08d) begin
+				/* LEA */
+				tmp_mem_result[63:0] = uop.oprd1.ext + uop.oprd1.value;
+				mem_op = op_none;
+				mem_blocked = 0;
+			end else if (uop.oprd1.t == `OPRD_T_MEM) begin
 				/* XXX: block previous stages */
 				mem_blocked = 1;
 				mem_op = op_write;
@@ -107,6 +114,7 @@ module Mem (input clk,
 				//$display("[MEM] oprd 2 %x %x %x %x", uop.oprd2.t, uop.oprd2.r, uop.oprd2.ext, uop.oprd2.value);
 			end else begin
 				/* No mem operation, unblock previous stages */
+				tmp_mem_result = alu_result;
 				mem_op = op_none;
 				mem_blocked = 0;
 			end

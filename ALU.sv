@@ -150,7 +150,7 @@ module ALU (
 				end
 
 				/* 0x84 ~ 0x85 */
-				10'b00_0010_0???: begin
+				10'b00_1000_010?: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG TEST %x & %x = %x", oprd1, oprd2, oprd1 & oprd2);
 `endif
@@ -169,6 +169,15 @@ module ALU (
 				10'b00_1000_10??: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+					tmp_rflags = rflags;
+				end
+
+				/* 0x8D */
+				10'b00_1000_1101: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG LEA %x = %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
 					tmp_rflags = rflags;
@@ -213,6 +222,15 @@ module ALU (
 
 				/* 0xE9 */
 				10'b00_1110_1001: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+					tmp_rflags = rflags;
+				end
+
+				/* 0xEB */
+				10'b00_1110_1011: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
 `endif
