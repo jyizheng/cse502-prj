@@ -19,8 +19,7 @@ module ALU (
 
 	/* For branch */
 	output branch,
-	output[63:0] branch_rip,
-	input micro_op_t uop
+	output[63:0] branch_rip
 );
 	logic[127:0] tmp_result;
 	logic[63:0] tmp_rflags;
@@ -34,6 +33,12 @@ module ALU (
 					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1+oprd2);
 `endif
 					tmp_result = oprd1 + oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0x08 ~ 0x0F */
@@ -42,6 +47,40 @@ module ALU (
 					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
 `endif
 					tmp_result = oprd1 | oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+				end
+
+				/* 0x20 ~ 0x2D */
+				10'b00_0010_0???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG AND %x | %x = %x", oprd1, oprd2, oprd1 & oprd2);
+`endif
+					tmp_result = oprd1 & oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+				end
+
+				/* 0x28 ~ 0x2D */
+				10'b00_0010_1???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG SUB %x - %x = %x", oprd1, oprd2, oprd1 - oprd2);
+`endif
+					tmp_result = oprd1 | oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0x31 ~ 0x35 */
@@ -50,6 +89,28 @@ module ALU (
 					$display("[ALU] DBG XOR %x | %x = %x", oprd1, oprd2, oprd1 ^ oprd2);
 `endif
 					tmp_result = oprd1 ^ oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+				end
+
+				/* 0x38 ~ 0x3D */
+				10'b00_0011_1???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG CMP %x & %x = %x", oprd1, oprd2, oprd1 - oprd2);
+`endif
+					tmp_result = oprd1 - oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+
+					tmp_result = oprd1;
 				end
 
 				/* 0x40 */
@@ -58,6 +119,7 @@ module ALU (
 					$display("[ALU] DBG LOAD %x  %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd1;
+					tmp_rflags = rflags;
 				end
 
 				/* 0x48 */
@@ -66,6 +128,7 @@ module ALU (
 					$display("[ALU] DBG STORE %x  %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0x50 ~ 0x57 */
@@ -74,6 +137,7 @@ module ALU (
 					$display("[ALU] DBG PUSH %x  %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0x58 ~ 0x5F */
@@ -82,6 +146,23 @@ module ALU (
 					$display("[ALU] DBG POP %x  %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
+				end
+
+				/* 0x84 ~ 0x85 */
+				10'b00_0010_0???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG TEST %x & %x = %x", oprd1, oprd2, oprd1 & oprd2);
+`endif
+					tmp_result = oprd1 & oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+
+					tmp_result = oprd1;
 				end
 
 				/* 0x88 ~ 0x8B */
@@ -90,6 +171,7 @@ module ALU (
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0xB8 ~ 0xBF */
@@ -98,6 +180,7 @@ module ALU (
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0xC3 */
@@ -106,6 +189,7 @@ module ALU (
 					$display("[ALU] DBG RET");
 `endif
 					/* Do nothing */
+					tmp_rflags = rflags;
 				end
 
 
@@ -115,6 +199,7 @@ module ALU (
 					$display("[ALU] DBG MOV %x = %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0xE8 */
@@ -123,6 +208,7 @@ module ALU (
 					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd1;
+					tmp_rflags = rflags;
 				end
 
 				/* 0xE9 */
@@ -131,6 +217,7 @@ module ALU (
 					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* 0xF7 */
@@ -139,6 +226,9 @@ module ALU (
 					$display("[ALU] DBG IMUL %x * %x = %x", oprd1, oprd2, oprd1 * oprd2);
 `endif
 					tmp_result = oprd1 * oprd2;
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_OF] = (tmp_result[127:64] == 0) ? 0 : 1;
+					tmp_rflags[`RF_CF] = (tmp_result[127:64] == 0) ? 0 : 1;
 				end
 
 				/* 0x105 */
@@ -147,6 +237,7 @@ module ALU (
 					$display("[ALU] DBG syscall");
 `endif
 					/* Do nothing */
+					tmp_rflags = rflags;
 				end
 
 				/* 0x180 ~ 0x18F */
@@ -155,6 +246,7 @@ module ALU (
 					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd2;
+					tmp_rflags = rflags;
 				end
 
 				/* Extensions */
@@ -164,6 +256,12 @@ module ALU (
 					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1 + oprd2);
 `endif
 					tmp_result = oprd1 + oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0x83 001 */
@@ -172,6 +270,12 @@ module ALU (
 					$display("[ALU] DBG OR %x | %x = %x", oprd1, oprd2, oprd1 | oprd2);
 `endif
 					tmp_result = oprd1 | oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0x83 100 */
@@ -180,6 +284,12 @@ module ALU (
 					$display("[ALU] DBG AND %x & %x = %x", oprd1, oprd2, oprd1 & oprd2);
 `endif
 					tmp_result = oprd1 & oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = 0;
+					tmp_rflags[`RF_OF] = 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0x81 101 */
@@ -188,6 +298,11 @@ module ALU (
 					$display("[ALU] DBG SUB %x - %x = %x", oprd1, oprd2, oprd1 - oprd2);
 `endif
 					tmp_result = oprd1 - oprd2;
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
 				/* 0xC1 100 */
@@ -196,6 +311,12 @@ module ALU (
 					for (int i = 64 + oprd2; i >= 0; i--) begin
 						tmp_result[i] = oprd1[i-oprd2];
 					end
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = (oprd2 == 1) ? tmp_result[64] ^ tmp_result[63] : 0;
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG SHL %x - %x = %x", oprd1, oprd2, tmp_result);
 `endif
@@ -207,6 +328,7 @@ module ALU (
 					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd1;
+					tmp_rflags = rflags;
 				end
 
 				default:
@@ -270,6 +392,7 @@ module ALU (
 				/* 0xEB JMP */
 				10'b00_1110_1011: begin
 					branch <= 1;
+					branch_rip <= oprd2 + next_rip;
 				end
 				/* 0x180 ~ 0x18F Jcc long */
 				10'b01_1000_????: begin

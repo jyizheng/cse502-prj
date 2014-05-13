@@ -302,14 +302,17 @@ module Core (
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;
+				rflags <= mem_rflags;
 			end else if (mem_uop.oprd1.t == `OPRD_T_STACK) begin
 				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
+				rflags <= mem_rflags;
 			end else if (mem_uop.oprd1.t == `OPRD_T_RDAX) begin
 				regs[`GPR_RAX] <= mem_result[63:0];
 				regs[`GPR_RDX] <= mem_result[127:64];
 				reg_occupies[`GPR_RAX] <= 0;
 				reg_occupies[`GPR_RDX] <= 0;
+				rflags <= mem_rflags;
 			end
 
 			if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
