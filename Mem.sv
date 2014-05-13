@@ -89,6 +89,10 @@ module Mem (input clk,
 				tmp_mem_result[63:0] = uop.oprd1.ext + uop.oprd1.value;
 				mem_op = op_none;
 				mem_blocked = 0;
+			end else if (uop.opcode == 10'h1ae) begin
+				/* CLFLUSH */
+				mem_op = op_none;
+				mem_blocked = 0;
 			end else if (uop.oprd1.t == `OPRD_T_MEM) begin
 				/* XXX: block previous stages */
 				mem_blocked = 1;

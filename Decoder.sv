@@ -442,6 +442,7 @@ module Decoder (
 			casez (opcode.opcode)
 				8'h05: get_operand2_desc = { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE };
 				8'h8?: get_operand2_desc = { `DC_OPRD_SZ_Z, `DC_OPRD_T_J };
+				8'hae: get_operand2_desc = { `DC_OPRD_SZ_V, `DC_OPRD_T_E };
 				8'haf: get_operand2_desc = { `DC_OPRD_SZ_V, `DC_OPRD_T_E };
 				default: begin
 					$write("ERROR, unsupported 2-byte opcode");
@@ -636,6 +637,7 @@ module Decoder (
 			casez (opcode.opcode)
 				8'h05: get_operand1_desc = { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE };
 				8'h8?: get_operand1_desc = { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE };
+				8'hae: get_operand1_desc = { `DC_OPRD_SZ_0, `DC_OPRD_T_NONE };
 				8'haf: get_operand1_desc = { `DC_OPRD_SZ_V, `DC_OPRD_T_G };
 				default: begin
 					$write("ERROR, unsupported 2-byte opcode %x", opcode.opcode);
@@ -1150,6 +1152,7 @@ module Decoder (
 				$write(" j");
 				output_condition(opcode.opcode[3:0]);
 			end
+			10'h1ae: $write(" clflush");
 			10'h1af: $write(" imul");
 
 			/* --- Special group w/ ModR/M opcode --- */
@@ -1401,8 +1404,17 @@ module Decoder (
 
 	function logic split_uop();
 		assert(!(dc_oprd[0].t == `OPRD_T_MEM && dc_oprd[1].t == `OPRD_T_MEM)) else $fatal;
-		/* operand 1 is MEM */
-		if (dc_oprd[0].t == `OPRD_T_MEM) begin
+		if (opcode == 10'h1ae || opcode == 10'h08d) begin
+			/* By-pass some special opcode */
+			decoded_uops[0] = 0;
+			decoded_uops[0].opcode = opcode_tr;
+			decoded_uops[0].oprd1 = dc_oprd[0];
+			decoded_uops[0].oprd2 = dc_oprd[1];
+			decoded_uops[0].oprd3 = dc_oprd[2];
+			decoded_uops[0].next_rip = rip + bytes_decoded;
+
+			num_decoded_uops = 1;
+		end else if (dc_oprd[0].t == `OPRD_T_MEM) begin
 			/* operand 1 is MEM */
 
 			/* FIXME Exclude MOV operation */
