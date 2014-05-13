@@ -83,6 +83,14 @@ module ALU (
 					tmp_result = oprd2;
 				end
 
+				/* 0xF7 */
+				10'b00_1111_0111: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG IMUL %x * %x = %x", oprd1, oprd2, oprd1 * oprd2);
+`endif
+					tmp_result = oprd1 * oprd2;
+				end
+
 				/* 0x105 */
 				10'b01_0000_0101: begin
 `ifdef ALU_DEBUG
@@ -93,6 +101,14 @@ module ALU (
 
 
 				/* Extensions */
+				/* 0x83 000 */
+				10'b11_0000_0011: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG ADD %x + %x = %x", oprd1, oprd2, oprd1 + oprd2);
+`endif
+					tmp_result = oprd1 + oprd2;
+				end
+
 				/* 0x83 001 */
 				10'b11_0000_0001: begin
 `ifdef ALU_DEBUG

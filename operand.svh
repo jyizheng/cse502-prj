@@ -3,9 +3,10 @@
 
 `define OPRD_T_NONE	0
 `define OPRD_T_REG	1
-`define OPRD_T_MEM	2
-`define OPRD_T_IMME	3
-`define OPRD_T_STACK	4
+`define OPRD_T_RDAX	2	/* The combination of rdx:rax (with rax as input) */
+`define OPRD_T_MEM	4
+`define OPRD_T_IMME	6
+`define OPRD_T_STACK	8
 
 `define OPRD_R_NONE	5'h1F
 `define OPRD_R_ALL	5'h1E

@@ -4,7 +4,7 @@
 `include "operand.svh"
 `include "micro_op.svh"
 
-//`define CORE_DEBUG 1
+`define CORE_DEBUG 1
 
 module Core (
 	input[63:0] entry
@@ -137,6 +137,11 @@ module Core (
 
 	/* check register conflict */
 	function logic df_reg_conflict(micro_op_t uop);
+		if (uop.oprd1.t == `OPRD_T_RDAX) begin
+			if (reg_occupies[`GPR_RAX] || reg_occupies[`GPR_RDX])
+				return 1;
+		end
+
 		if (uop.oprd1.t == `OPRD_T_REG || uop.oprd1.t == `OPRD_T_STACK)
 			if (reg_occupies[uop.oprd1.r] != 0)
 				return 1;
@@ -155,8 +160,12 @@ module Core (
 	/* This can only be called from alwasy_ff */
 	function logic df_set_reg_conflict(oprd_t oprd);
 		/* FIXME: here we assume oprd1 is the target, need to handle multi-target condition */
-		if (oprd.t == `OPRD_T_REG || oprd.t == `OPRD_T_STACK)
+		if (oprd.t == `OPRD_T_REG || oprd.t == `OPRD_T_STACK) begin
 			reg_occupies[oprd.r] <= 1;
+		end	else if (oprd.t == `OPRD_T_RDAX) begin
+			reg_occupies[`GPR_RAX] <= 1;
+			reg_occupies[`GPR_RDX] <= 1;
+		end
 
 		return 0;
 	endfunction
@@ -173,6 +182,8 @@ module Core (
 				df_uop_tmp.oprd1.value = regs[df_uop_tmp.oprd1.r];
 			end else if (df_uop_tmp.oprd1.t == `OPRD_T_STACK) begin
 				df_uop_tmp.oprd1.ext = regs[df_uop_tmp.oprd1.r];
+			end else if (df_uop_tmp.oprd1.t == `OPRD_T_RDAX) begin
+				df_uop_tmp.oprd1.value = regs[`GPR_RAX];
 			end
 
 			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
@@ -273,7 +284,7 @@ module Core (
 					regs[`GPR_R8], regs[`GPR_R9]);
 			end
 
-			/* Clear target reg occupation */
+			/* Write-back & Clear target reg occupation */
 			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
@@ -281,7 +292,14 @@ module Core (
 			end else if (mem_uop.oprd1.t == `OPRD_T_STACK) begin
 				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
-			end else if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
+			end else if (mem_uop.oprd1.t == `OPRD_T_RDAX) begin
+				regs[`GPR_RAX] <= mem_result[63:0];
+				regs[`GPR_RDX] <= mem_result[127:64];
+				reg_occupies[`GPR_RAX] <= 0;
+				reg_occupies[`GPR_RDX] <= 0;
+			end
+
+			if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
 				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] + 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 			end

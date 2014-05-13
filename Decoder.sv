@@ -1464,6 +1464,9 @@ module Decoder (
 	function translate_grp1();
 
 		casez (modrm.v.reg_op)
+			3'b000: begin
+				opcode_tr = 10'b11_0000_0011;
+			end
 			3'b001: begin
 				opcode_tr = 10'b11_0000_0001;
 			end
@@ -1736,6 +1739,7 @@ module Decoder (
 				/* XXX: hacks for special instructions
 				 * 1. Deal with opcodes interacting with stack
 				 * 2. deal with syscall
+				 * 3. RDX:RAX for imul (OPRD_T_RDAX)
 				 */
 				casez (opcode_tr)
 					/* Push */
@@ -1748,16 +1752,6 @@ module Decoder (
 						dc_oprd[1].t = `OPRD_T_STACK;
 						dc_oprd[1].r = `GPR_RSP;
 					end
-					/* Call */
-					10'b11_0001_0000: begin
-						dc_oprd[0].t = `OPRD_T_STACK;
-						dc_oprd[0].r = `GPR_RSP;
-						dc_oprd[0].value = rip + bytes_decoded;
-`ifdef DECODER_DEBUG
-						$display("oprd 1 %x %x %x %x", dc_oprd[0].t, dc_oprd[0].r, dc_oprd[0].ext, dc_oprd[0].value);
-						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
-`endif
-					end
 					/* Ret */
 					10'b00_1100_0011: begin
 						dc_oprd[1].t = `OPRD_T_STACK;
@@ -1767,11 +1761,24 @@ module Decoder (
 						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
 `endif
 					end
-
+					/* imul modr/m */
+					10'b00_1111_0111: begin
+						dc_oprd[0].t = `OPRD_T_RDAX;
+					end
 					/* Syscall, as we execute it at WB, so not need to check RAW (FIXME: superscalar) */
 					10'b01_0000_0101: begin
 						dc_oprd[0].t = `OPRD_T_REG;
 						dc_oprd[0].r = `GPR_RAX;
+					end
+					/* Call */
+					10'b11_0001_0000: begin
+						dc_oprd[0].t = `OPRD_T_STACK;
+						dc_oprd[0].r = `GPR_RSP;
+						dc_oprd[0].value = rip + bytes_decoded;
+`ifdef DECODER_DEBUG
+						$display("oprd 1 %x %x %x %x", dc_oprd[0].t, dc_oprd[0].r, dc_oprd[0].ext, dc_oprd[0].value);
+						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
+`endif
 					end
 					default: /* Do nothing */;
 				endcase

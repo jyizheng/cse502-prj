@@ -1,5 +1,6 @@
 * modr/m opcode extension translation
 	grp1(80-83): 
+		000: 10'b11_0000_0011
 		001: 10'b11_0000_0001
 		100: 10'b11_0000_0010
 	grp5(FF):
