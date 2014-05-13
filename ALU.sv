@@ -173,6 +173,17 @@ module ALU (
 					tmp_result = oprd1 - oprd2;
 				end
 
+				/* 0xC1 100 */
+				10'b11_0000_0101: begin
+					tmp_result = 0;
+					for (int i = 64 + oprd2; i >= 0; i--) begin
+						tmp_result[i] = oprd1[i-oprd2];
+					end
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG SHL %x - %x = %x", oprd1, oprd2, tmp_result);
+`endif
+				end
+
 				/* 0xFF 010 */
 				10'b11_0001_0000: begin
 `ifdef ALU_DEBUG

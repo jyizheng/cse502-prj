@@ -23,6 +23,9 @@ module Mem (input clk,
 	enum { op_none, op_read, op_write } mem_op;
 	enum { mem_idle, mem_waiting, mem_active } mem_state;
 
+	logic[63:0] rip;
+	assign rip = uop.next_rip;
+
 	logic[63:0] addr;
 	logic[63:0] value;
 
@@ -101,11 +104,15 @@ module Mem (input clk,
 				mem_blocked = 1;
 				mem_op = op_read;
 				addr = uop.oprd2.ext;
-				$display("[MEM] oprd 2 %x %x %x %x", uop.oprd2.t, uop.oprd2.r, uop.oprd2.ext, uop.oprd2.value);
+				//$display("[MEM] oprd 2 %x %x %x %x", uop.oprd2.t, uop.oprd2.r, uop.oprd2.ext, uop.oprd2.value);
 			end else begin
 				/* No mem operation, unblock previous stages */
+				mem_op = op_none;
 				mem_blocked = 0;
 			end
+`ifdef MEM_DEBUG
+				$display("[MEM] DEBUG (%x) %x %x (%x) [%x %x %x %x] [%x %x %x %x]", uop.next_rip, mem_blocked, mem_op, uop.opcode, uop.oprd1.t, uop.oprd1.r, uop.oprd1.ext, uop.oprd1.value, uop.oprd2.t, uop.oprd2.r, uop.oprd2.ext, uop.oprd2.value);
+`endif
 		end else if (mem_state == mem_waiting && dcache_done) begin
 			/* XXX: unblock previous stages */
 			mem_blocked = 0;

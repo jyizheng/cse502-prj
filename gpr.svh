@@ -2,24 +2,24 @@
 `ifndef _GPR_SVH_
 `define _GPR_SVH_ 1
 
-`define GPR_RAX	4'd0
-`define GPR_RCX	4'd1
-`define GPR_RDX	4'd2
-`define GPR_RBX	4'd3
-`define GPR_RSP	4'd4
-`define GPR_RBP	4'd5
-`define GPR_RSI	4'd6
-`define GPR_RDI	4'd7
-`define GPR_R8	4'd8
-`define GPR_R9	4'd9
-`define GPR_R10	4'd10
-`define GPR_R11	4'd11
-`define GPR_R12	4'd12
-`define GPR_R13	4'd13
-`define GPR_R14	4'd14
-`define GPR_R15	4'd15
+`define GPR_RAX	5'd0
+`define GPR_RCX	5'd1
+`define GPR_RDX	5'd2
+`define GPR_RBX	5'd3
+`define GPR_RSP	5'd4
+`define GPR_RBP	5'd5
+`define GPR_RSI	5'd6
+`define GPR_RDI	5'd7
+`define GPR_R8	5'd8
+`define GPR_R9	5'd9
+`define GPR_R10	5'd10
+`define GPR_R11	5'd11
+`define GPR_R12	5'd12
+`define GPR_R13	5'd13
+`define GPR_R14	5'd14
+`define GPR_R15	5'd15
 
-`define GPR_RM	4'd16
+`define GPR_RM	5'd16
 
 /* RFLAGS fields */
 `define RF_CF	0

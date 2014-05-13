@@ -221,8 +221,9 @@ module Core (
 
 			df_uop <= df_uop_tmp;
 			df_exe <= 1;
-		end
-		else begin
+		end else if (mem_blocked) begin
+			/* Keep the previous value */
+		end else begin
 			df_uop <= 0;
 			df_exe <= 0;
 		end
@@ -339,7 +340,9 @@ module Core (
 			end
 
 `ifdef CORE_DEBUG
-			$display("(%x)", mem_uop.next_rip);
+			$display("(%x %x [%x %x %x %x] [%x %x %x %x])", mem_uop.next_rip, mem_uop.opcode,
+				mem_uop.oprd1.t, mem_uop.oprd1.r, mem_uop.oprd1.ext, mem_uop.oprd1.value,
+				mem_uop.oprd2.t, mem_uop.oprd2.r, mem_uop.oprd2.ext, mem_uop.oprd2.value);
 			$display("RAX = %x", regs[`GPR_RAX]);
 			$display("RBX = %x", regs[`GPR_RBX]);
 			$display("RCX = %x", regs[`GPR_RCX]);

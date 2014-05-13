@@ -134,10 +134,9 @@ module Decoder (
 
 		/* setup new output */
 		if (!dc_buf_empty(taken)) begin
-			out_dc_instr <= dc_buf[dc_buf_tail[3:0]];
+			out_dc_instr <= dc_buf[(dc_buf_tail[3:0]+taken)%`DC_BUF_SZ];
 			dc_df <= 1;
-		end
-		else begin
+		end else begin
 			dc_df <= 0;
 		end
 	end
@@ -1485,6 +1484,18 @@ module Decoder (
 		translate_grp1 = 0;
 	endfunction
 
+	function translate_grp2();
+
+		casez (modrm.v.reg_op)
+			3'b100: begin
+				opcode_tr = 10'b11_0000_0101;
+			end
+			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
+		endcase
+
+		translate_grp2 = 0;
+	endfunction
+
 	function translate_grp5();
 
 		casez (modrm.v.reg_op)
@@ -1504,6 +1515,7 @@ module Decoder (
 			/* Group 1*/
 			10'h081: translate_grp1();
 			10'h083: translate_grp1();
+			10'h0C1: translate_grp2();
 
 			10'h0FF: translate_grp5();
 			default: opcode_tr = opcode;
