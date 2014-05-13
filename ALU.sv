@@ -323,6 +323,22 @@ module ALU (
 					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
 				end
 
+				/* 0x83 111 */
+				10'b11_0000_0110: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG CMP %x & %x = %x", oprd1, oprd2, oprd1 - oprd2);
+`endif
+					tmp_result = oprd1 - oprd2;
+
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_CF] = tmp_result[64];
+					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_SF] = tmp_result[63];
+					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+
+					tmp_result = oprd1;
+				end
+
 				/* 0xC1 100 */
 				10'b11_0000_0101: begin
 					tmp_result = 0;

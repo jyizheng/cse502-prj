@@ -1490,6 +1490,9 @@ module Decoder (
 			3'b101: begin
 				opcode_tr = 10'b11_0000_0100;
 			end
+			3'b111: begin
+				opcode_tr = 10'b11_0000_0110;
+			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
 
