@@ -193,7 +193,9 @@ module Core (
 			end else if (df_uop_tmp.oprd1.t == `OPRD_T_RDAX) begin
 				df_uop_tmp.oprd1.value = regs[`GPR_RAX];
 			end else if (df_uop_tmp.oprd1.t == `OPRD_T_MEM) begin
-				df_uop_tmp.oprd1.value = (df_uop_tmp.oprd1.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd1.r] : 0;
+				df_uop_tmp.oprd1.value =
+					(df_uop_tmp.oprd1.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd1.r] :
+					df_uop_tmp.next_rip;
 			end
 
 			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
@@ -201,7 +203,9 @@ module Core (
 			end else if (df_uop_tmp.oprd2.t == `OPRD_T_STACK) begin
 				df_uop_tmp.oprd2.ext = regs[df_uop_tmp.oprd2.r];
 			end else if (df_uop_tmp.oprd2.t == `OPRD_T_MEM) begin
-				df_uop_tmp.oprd2.value = (df_uop_tmp.oprd2.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd2.r] : 0;
+				df_uop_tmp.oprd2.value =
+					(df_uop_tmp.oprd2.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd2.r] :
+					df_uop_tmp.next_rip;
 			end
 
 			/* FIXME: need oprd3? */
@@ -295,10 +299,10 @@ module Core (
 				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
 					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
 					regs[`GPR_R8], regs[`GPR_R9]);
-			end
-
-			/* Write-back & Clear target reg occupation */
-			if (mem_uop.oprd1.t == `OPRD_T_REG) begin
+				reg_occupies[mem_uop.oprd1.r] <= 0;
+				rflags <= mem_rflags;
+			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
+				/* Write-back & Clear target reg occupation */
 				regs[mem_uop.oprd1.r] <= mem_result[63:0];
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				reg_num <= mem_uop.oprd1.r;
