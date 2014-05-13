@@ -86,7 +86,7 @@ module Mem (input clk,
 		if (enable && mem_state == mem_idle) begin
 			if (uop.opcode == 10'h08d) begin
 				/* LEA */
-				tmp_mem_result[63:0] = uop.oprd1.ext + uop.oprd1.value;
+				tmp_mem_result[63:0] = uop.oprd2.ext + uop.oprd2.value;
 				mem_op = op_none;
 				mem_blocked = 0;
 			end else if (uop.opcode == 10'h1ae) begin
