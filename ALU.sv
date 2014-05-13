@@ -1,7 +1,8 @@
 `include "instruction.svh"
+`include "micro_op.svh"
 `include "gpr.svh"
 
-`define ALU_DEBUG 1
+//`define ALU_DEBUG 1
 
 module ALU (
 	input clk,
@@ -18,7 +19,8 @@ module ALU (
 
 	/* For branch */
 	output branch,
-	output[63:0] branch_rip
+	output[63:0] branch_rip,
+	input micro_op_t uop
 );
 	logic[127:0] tmp_result;
 	logic[63:0] tmp_rflags;
@@ -121,6 +123,14 @@ module ALU (
 					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
 `endif
 					tmp_result = oprd1;
+				end
+
+				/* 0xE9 */
+				10'b00_1110_1001: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG JMP %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
 				end
 
 				/* 0xF7 */
@@ -242,9 +252,13 @@ module ALU (
 			casez (opcode)
 				/* 0x70 ~ 0x7F Jcc */
 				10'b00_0111_????: begin
-					branch <= 1;
 					if (condition_true({4'b0,opcode.opcode[3:0]})) begin
 					end
+				end
+				/* 0xE9 JMP */
+				10'b00_1110_1001: begin
+					branch <= 1;
+					branch_rip <= oprd2 + next_rip;
 				end
 				/* 0xEB JMP */
 				10'b00_1110_1011: begin
@@ -260,6 +274,9 @@ module ALU (
 					branch <= 0;
 				end
 			endcase
+		end else begin
+			branch <= 0;
+			branch_rip <= 0;
 		end
 	end
 
