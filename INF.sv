@@ -59,15 +59,8 @@ module INF(input clk,
 			end else if (fetch_state == fetch_waiting) begin
 				ic_enable <= 0;
 				if (ic_done == 1) begin
-					int first_bytes = 8 - fetch_skip[2:0];
-					int skip_words = fetch_skip[5:3] + 1;
-					//$display("fetch_skip = %x first_bytes = %x skip_words = %x", fetch_skip, first_bytes, skip_words);
-					/* copy the first (might) un-aligned 8 bytes */
-					for (int i = 0; i < first_bytes; i += 1) begin
-						decode_buffer[(fetch_offset +i)*8+:8] <= idata[(skip_words-1)*64+(first_bytes-1-i)*8+:9];
-					end
-					for (int i = 8*skip_words; i < 64; i += 8) begin
-						decode_buffer[(fetch_offset+first_bytes+i-8*skip_words)*8+:64] <= idata[i*8+:64];
+					for (int i = fetch_skip; i < 64; i += 1) begin
+						decode_buffer[(fetch_offset+i-fetch_skip)*8+:8] <= idata[i*8+:8];
 					end
 					fetch_offset <= fetch_offset + (64 - fetch_skip);
 					fetch_skip <= 0;

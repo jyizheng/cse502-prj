@@ -39,14 +39,14 @@ module Arbiter(Sysbus bus,
 	logic[8:0] buf_idx; 
 
 	logic[64*8-1:0] rev_idata;
-	//assign idata[0+:8] = rev_idata[56+:8]; assign idata[8+:8] = rev_idata[48+:8]; assign idata[16+:8] = rev_idata[40+:8]; assign idata[24+:8] = rev_idata[32+:8]; assign idata[32+:8] = rev_idata[24+:8]; assign idata[40+:8] = rev_idata[16+:8]; assign idata[48+:8] = rev_idata[8+:8]; assign idata[56+:8] = rev_idata[0+:8];
-	//assign idata[64+:8] = rev_idata[120+:8]; assign idata[72+:8] = rev_idata[112+:8]; assign idata[80+:8] = rev_idata[104+:8]; assign idata[88+:8] = rev_idata[96+:8]; assign idata[96+:8] = rev_idata[88+:8]; assign idata[104+:8] = rev_idata[80+:8]; assign idata[112+:8] = rev_idata[72+:8]; assign idata[120+:8] = rev_idata[64+:8];
-	//assign idata[128+:8] = rev_idata[184+:8]; assign idata[136+:8] = rev_idata[176+:8]; assign idata[144+:8] = rev_idata[168+:8]; assign idata[152+:8] = rev_idata[160+:8]; assign idata[160+:8] = rev_idata[152+:8]; assign idata[168+:8] = rev_idata[144+:8]; assign idata[176+:8] = rev_idata[136+:8]; assign idata[184+:8] = rev_idata[128+:8];
-	//assign idata[192+:8] = rev_idata[248+:8]; assign idata[200+:8] = rev_idata[240+:8]; assign idata[208+:8] = rev_idata[232+:8]; assign idata[216+:8] = rev_idata[224+:8]; assign idata[224+:8] = rev_idata[216+:8]; assign idata[232+:8] = rev_idata[208+:8]; assign idata[240+:8] = rev_idata[200+:8]; assign idata[248+:8] = rev_idata[192+:8];
-	//assign idata[256+:8] = rev_idata[312+:8]; assign idata[264+:8] = rev_idata[304+:8]; assign idata[272+:8] = rev_idata[296+:8]; assign idata[280+:8] = rev_idata[288+:8]; assign idata[288+:8] = rev_idata[280+:8]; assign idata[296+:8] = rev_idata[272+:8]; assign idata[304+:8] = rev_idata[264+:8]; assign idata[312+:8] = rev_idata[256+:8];
-	//assign idata[320+:8] = rev_idata[376+:8]; assign idata[328+:8] = rev_idata[368+:8]; assign idata[336+:8] = rev_idata[360+:8]; assign idata[344+:8] = rev_idata[352+:8]; assign idata[352+:8] = rev_idata[344+:8]; assign idata[360+:8] = rev_idata[336+:8]; assign idata[368+:8] = rev_idata[328+:8]; assign idata[376+:8] = rev_idata[320+:8];
-	//assign idata[384+:8] = rev_idata[440+:8]; assign idata[392+:8] = rev_idata[432+:8]; assign idata[400+:8] = rev_idata[424+:8]; assign idata[408+:8] = rev_idata[416+:8]; assign idata[416+:8] = rev_idata[408+:8]; assign idata[424+:8] = rev_idata[400+:8]; assign idata[432+:8] = rev_idata[392+:8]; assign idata[440+:8] = rev_idata[384+:8];
-	//assign idata[448+:8] = rev_idata[504+:8]; assign idata[456+:8] = rev_idata[496+:8]; assign idata[464+:8] = rev_idata[488+:8]; assign idata[472+:8] = rev_idata[480+:8]; assign idata[480+:8] = rev_idata[472+:8]; assign idata[488+:8] = rev_idata[464+:8]; assign idata[496+:8] = rev_idata[456+:8]; assign idata[504+:8] = rev_idata[448+:8];
+	assign idata[0+:8] = rev_idata[56+:8]; assign idata[8+:8] = rev_idata[48+:8]; assign idata[16+:8] = rev_idata[40+:8]; assign idata[24+:8] = rev_idata[32+:8]; assign idata[32+:8] = rev_idata[24+:8]; assign idata[40+:8] = rev_idata[16+:8]; assign idata[48+:8] = rev_idata[8+:8]; assign idata[56+:8] = rev_idata[0+:8];
+	assign idata[64+:8] = rev_idata[120+:8]; assign idata[72+:8] = rev_idata[112+:8]; assign idata[80+:8] = rev_idata[104+:8]; assign idata[88+:8] = rev_idata[96+:8]; assign idata[96+:8] = rev_idata[88+:8]; assign idata[104+:8] = rev_idata[80+:8]; assign idata[112+:8] = rev_idata[72+:8]; assign idata[120+:8] = rev_idata[64+:8];
+	assign idata[128+:8] = rev_idata[184+:8]; assign idata[136+:8] = rev_idata[176+:8]; assign idata[144+:8] = rev_idata[168+:8]; assign idata[152+:8] = rev_idata[160+:8]; assign idata[160+:8] = rev_idata[152+:8]; assign idata[168+:8] = rev_idata[144+:8]; assign idata[176+:8] = rev_idata[136+:8]; assign idata[184+:8] = rev_idata[128+:8];
+	assign idata[192+:8] = rev_idata[248+:8]; assign idata[200+:8] = rev_idata[240+:8]; assign idata[208+:8] = rev_idata[232+:8]; assign idata[216+:8] = rev_idata[224+:8]; assign idata[224+:8] = rev_idata[216+:8]; assign idata[232+:8] = rev_idata[208+:8]; assign idata[240+:8] = rev_idata[200+:8]; assign idata[248+:8] = rev_idata[192+:8];
+	assign idata[256+:8] = rev_idata[312+:8]; assign idata[264+:8] = rev_idata[304+:8]; assign idata[272+:8] = rev_idata[296+:8]; assign idata[280+:8] = rev_idata[288+:8]; assign idata[288+:8] = rev_idata[280+:8]; assign idata[296+:8] = rev_idata[272+:8]; assign idata[304+:8] = rev_idata[264+:8]; assign idata[312+:8] = rev_idata[256+:8];
+	assign idata[320+:8] = rev_idata[376+:8]; assign idata[328+:8] = rev_idata[368+:8]; assign idata[336+:8] = rev_idata[360+:8]; assign idata[344+:8] = rev_idata[352+:8]; assign idata[352+:8] = rev_idata[344+:8]; assign idata[360+:8] = rev_idata[336+:8]; assign idata[368+:8] = rev_idata[328+:8]; assign idata[376+:8] = rev_idata[320+:8];
+	assign idata[384+:8] = rev_idata[440+:8]; assign idata[392+:8] = rev_idata[432+:8]; assign idata[400+:8] = rev_idata[424+:8]; assign idata[408+:8] = rev_idata[416+:8]; assign idata[416+:8] = rev_idata[408+:8]; assign idata[424+:8] = rev_idata[400+:8]; assign idata[432+:8] = rev_idata[392+:8]; assign idata[440+:8] = rev_idata[384+:8];
+	assign idata[448+:8] = rev_idata[504+:8]; assign idata[456+:8] = rev_idata[496+:8]; assign idata[464+:8] = rev_idata[488+:8]; assign idata[472+:8] = rev_idata[480+:8]; assign idata[480+:8] = rev_idata[472+:8]; assign idata[488+:8] = rev_idata[464+:8]; assign idata[496+:8] = rev_idata[456+:8]; assign idata[504+:8] = rev_idata[448+:8];
 
 	logic[64*8-1:0] rev_drdata;
 	assign drdata[0+:8] = rev_drdata[56+:8]; assign drdata[8+:8] = rev_drdata[48+:8]; assign drdata[16+:8] = rev_drdata[40+:8]; assign drdata[24+:8] = rev_drdata[32+:8]; assign drdata[32+:8] = rev_drdata[24+:8]; assign drdata[40+:8] = rev_drdata[16+:8]; assign drdata[48+:8] = rev_drdata[8+:8]; assign drdata[56+:8] = rev_drdata[0+:8];
@@ -90,7 +90,7 @@ module Arbiter(Sysbus bus,
 			bus.reqtag <= 0;
 			ireqack <= 0;
 			idone <= 0;
-			idata <= 0;
+			rev_idata <= 0;
 			dreqack <= 0;
 			ddone <= 0;
 			rev_drdata <= 0;
@@ -166,7 +166,7 @@ module Arbiter(Sysbus bus,
 				if (bus_state == bus_i_active) begin
 					bus_state <= bus_idle;
 					idone <= 1;
-					idata <= bus_buf;
+					rev_idata <= bus_buf;
 				end else if (bus_state == bus_d_active) begin
 					rev_drdata <= bus_buf;
 					bus_state <= bus_idle;
