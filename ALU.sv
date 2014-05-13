@@ -50,6 +50,22 @@ module ALU (
 					tmp_result = oprd1 ^ oprd2;
 				end
 
+				/* 0x50 ~ 0x57 */
+				10'b00_0101_0???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG PUSH %x  %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
+
+				/* 0x58 ~ 0x5F */
+				10'b00_0101_1???: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG POP %x  %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
+
 				/* 0x88 ~ 0x8B */
 				10'b00_1000_10??: begin
 `ifdef ALU_DEBUG
