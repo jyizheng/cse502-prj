@@ -146,7 +146,15 @@ module Core (
 			if (reg_occupies[uop.oprd1.r] != 0)
 				return 1;
 
+		if (uop.oprd1.t == `OPRD_T_MEM && uop.oprd1.r != `OPRD_R_NONE)
+			if (reg_occupies[uop.oprd1.r] != 0)
+				return 1;
+
 		if (uop.oprd2.t == `OPRD_T_REG || uop.oprd2.t == `OPRD_T_STACK)
+			if (reg_occupies[uop.oprd2.r] != 0)
+				return 1;
+
+		if (uop.oprd2.t == `OPRD_T_MEM && uop.oprd2.r != `OPRD_R_NONE)
 			if (reg_occupies[uop.oprd2.r] != 0)
 				return 1;
 
@@ -184,12 +192,16 @@ module Core (
 				df_uop_tmp.oprd1.ext = regs[df_uop_tmp.oprd1.r];
 			end else if (df_uop_tmp.oprd1.t == `OPRD_T_RDAX) begin
 				df_uop_tmp.oprd1.value = regs[`GPR_RAX];
+			end else if (df_uop_tmp.oprd1.t == `OPRD_T_MEM) begin
+				df_uop_tmp.oprd1.value = (df_uop_tmp.oprd1.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd1.r] : 0;
 			end
 
 			if (df_uop_tmp.oprd2.t == `OPRD_T_REG) begin
 				df_uop_tmp.oprd2.value = regs[df_uop_tmp.oprd2.r];
 			end else if (df_uop_tmp.oprd2.t == `OPRD_T_STACK) begin
 				df_uop_tmp.oprd2.ext = regs[df_uop_tmp.oprd2.r];
+			end else if (df_uop_tmp.oprd2.t == `OPRD_T_MEM) begin
+				df_uop_tmp.oprd2.value = (df_uop_tmp.oprd2.r != `OPRD_R_NONE) ? regs[df_uop_tmp.oprd2.r] : 0;
 			end
 
 			/* FIXME: need oprd3? */
@@ -301,7 +313,7 @@ module Core (
 
 			if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
 				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] + 8;
-				reg_occupies[mem_uop.oprd1.r] <= 0;
+				reg_occupies[mem_uop.oprd2.r] <= 0;
 			end
 
 			/* Deal with call/ret */
@@ -313,6 +325,10 @@ module Core (
 				/* ret */
 				wb_branch <= 1;
 				wb_rip <= mem_result[63:0];
+			end else if (mem_uop.opcode == 10'b00_1110_1000) begin
+				/* Call Jz */
+				wb_branch <= 1;
+				wb_rip <= mem_uop.next_rip + mem_uop.oprd2.value;
 			end else if (mem_uop.opcode == 10'b01_0000_0101) begin
 				/* syscall */
 				wb_branch <= 1;
@@ -323,6 +339,7 @@ module Core (
 			end
 
 `ifdef CORE_DEBUG
+			$display("(%x)", mem_uop.next_rip);
 			$display("RAX = %x", regs[`GPR_RAX]);
 			$display("RBX = %x", regs[`GPR_RBX]);
 			$display("RCX = %x", regs[`GPR_RCX]);

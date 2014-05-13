@@ -83,13 +83,13 @@ module Mem (input clk,
 				/* XXX: block previous stages */
 				mem_blocked = 1;
 				mem_op = op_write;
-				addr = uop.oprd1.ext;
+				addr = uop.oprd1.ext + uop.oprd1.value;
 				value = alu_result[63:0];
 			end else if (uop.oprd2.t == `OPRD_T_MEM) begin
 				/* XXX: block previous stages */
 				mem_blocked = 1;
 				mem_op = op_read;
-				addr = uop.oprd1.ext;
+				addr = uop.oprd2.ext + uop.oprd2.value;
 			end else if (uop.oprd1.t == `OPRD_T_STACK) begin
 				/* Writing into stack */
 				mem_blocked = 1;

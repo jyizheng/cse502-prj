@@ -3,7 +3,7 @@
 `include "gpr.svh"
 
 `define DECODER_OUTPUT 1
-//`define DECODER_DEBUG 1
+`define DECODER_DEBUG 1
 
 `define DC_BUF_SZ	16
 `define DC_MAX_INSTR	4	// maximum number of instructions per cycle
@@ -80,8 +80,8 @@ module Decoder (
 			10'b00_0111_????: dc_state <= dc_stall;
 			/* 0xC3 retq */
 			10'b00_1100_0011: dc_state <= dc_stall;
-			/* 0xEB JMP */
-			10'b00_1110_1011: dc_state <= dc_stall;
+			/* 0xE8 0xE9 0xEA 0xEB call/JMP */
+			10'b00_1110_10??: dc_state <= dc_stall;
 			/* 0x105 syscall */
 			10'b01_0000_0101: dc_state <= dc_stall;
 			/* 0x180 ~ 0x18F Jcc long */
@@ -1353,10 +1353,12 @@ module Decoder (
 					end
 				end
 				2'b01: begin
+					dc_oprd[oprd_no].t = `OPRD_T_MEM;
 					dc_oprd[oprd_no].ext = decode_disp();
 					dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 				end
 				2'b10: begin
+					dc_oprd[oprd_no].t = `OPRD_T_MEM;
 					dc_oprd[oprd_no].ext = decode_disp();
 					dc_oprd[oprd_no].r = {1'b0, rex.B, modrm.v.rm};
 				end
@@ -1402,7 +1404,9 @@ module Decoder (
 		assert(!(dc_oprd[0].t == `OPRD_T_MEM && dc_oprd[1].t == `OPRD_T_MEM)) else $fatal;
 		/* operand 1 is MEM */
 		if (dc_oprd[0].t == `OPRD_T_MEM) begin
-			/* Exclude MOV operation */
+			/* operand 1 is MEM */
+
+			/* FIXME Exclude MOV operation */
 			decoded_uops[0] = 0;
 			decoded_uops[0].opcode.opcode = 7'h40;
 			decoded_uops[0].oprd1.t = `OPRD_T_REG;
@@ -1425,11 +1429,10 @@ module Decoder (
 			decoded_uops[2].next_rip = rip + bytes_decoded;
 
 			num_decoded_uops = 3;
-		end
+		end else if (dc_oprd[1].t == `OPRD_T_MEM) begin
+			/* operand 2 is MEM */
 
-		/* operand 2 is MEM */
-		if (dc_oprd[1].t == `OPRD_T_MEM) begin
-			/* Exclude MOV operation */
+			/* FIXME Exclude MOV operation */
 			decoded_uops[0] = 0;
 			decoded_uops[0].opcode.opcode = 7'h40;
 			decoded_uops[0].oprd1.t = `OPRD_T_REG;
@@ -1445,9 +1448,9 @@ module Decoder (
 			decoded_uops[1].next_rip = rip + bytes_decoded;
 
 			num_decoded_uops = 2;
-		end
+		end else if (can_decode && (bytes_decoded != 0) && (num_decoded_uops == 0)) begin
+			/* no operand is MEM */
 
-		if (can_decode && (bytes_decoded != 0) && (num_decoded_uops == 0)) begin
 			decoded_uops[0] = 0;
 			decoded_uops[0].opcode = opcode_tr;
 			decoded_uops[0].oprd1 = dc_oprd[0];
@@ -1472,6 +1475,9 @@ module Decoder (
 			end
 			3'b100: begin
 				opcode_tr = 10'b11_0000_0010;
+			end
+			3'b101: begin
+				opcode_tr = 10'b11_0000_0100;
 			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase
@@ -1554,7 +1560,7 @@ module Decoder (
 		/* FIXME: Operand 3? */
 
 `ifdef DECODER_DEBUG
-		$display("[DC] DEBUG oprd1 %h oprd2 %h", dc_oprd[0], dc_oprd[1]);
+		$display("[DC] DEBUG Before transform oprd1 %x %x %x %x oprd2 %x %x %x %x", dc_oprd[0].t, dc_oprd[0].r, dc_oprd[0].ext, dc_oprd[0].value, dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
 `endif
 
 		decode_one = 0;
@@ -1761,6 +1767,16 @@ module Decoder (
 						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
 `endif
 					end
+					/* Call */
+					10'b00_1110_1000: begin
+						dc_oprd[0].t = `OPRD_T_STACK;
+						dc_oprd[0].r = `GPR_RSP;
+						dc_oprd[0].value = rip + bytes_decoded;
+`ifdef DECODER_DEBUG
+						$display("oprd 1 %x %x %x %x", dc_oprd[0].t, dc_oprd[0].r, dc_oprd[0].ext, dc_oprd[0].value);
+						$display("oprd 2 %x %x %x %x", dc_oprd[1].t, dc_oprd[1].r, dc_oprd[1].ext, dc_oprd[1].value);
+`endif
+					end
 					/* imul modr/m */
 					10'b00_1111_0111: begin
 						dc_oprd[0].t = `OPRD_T_RDAX;
@@ -1786,6 +1802,13 @@ module Decoder (
 				/* Split uop if necessary */
 				split_uop();
 
+`ifdef DECODER_DEBUG
+				$display("[DC] DEBUG num_decoded_uops = %d", num_decoded_uops);
+				$display("[DC] DEBUG after transform:");
+				for (int i = 0; i < num_decoded_uops; i += 1) begin
+					$display("\t (%d) (%x %x) (%x %x %x %x) (%x %x %x %x)", i, decoded_uops[i].t, decoded_uops[i].opcode, decoded_uops[i].oprd1.t, decoded_uops[i].oprd1.r, decoded_uops[i].oprd1.ext, decoded_uops[i].oprd1.value, decoded_uops[i].oprd2.t, decoded_uops[i].oprd2.r, decoded_uops[i].oprd2.ext, decoded_uops[i].oprd2.value);
+				end
+`endif
 			end /* error_code != ec_rex */
 
 			/* finish decode cycle */

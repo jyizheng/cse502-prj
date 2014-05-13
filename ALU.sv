@@ -50,6 +50,22 @@ module ALU (
 					tmp_result = oprd1 ^ oprd2;
 				end
 
+				/* 0x40 */
+				10'b00_0100_0000: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG LOAD %x  %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd1;
+				end
+
+				/* 0x48 */
+				10'b00_0100_1000: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG STORE %x  %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+				end
+
 				/* 0x50 ~ 0x57 */
 				10'b00_0101_0???: begin
 `ifdef ALU_DEBUG
@@ -99,6 +115,14 @@ module ALU (
 					tmp_result = oprd2;
 				end
 
+				/* 0xE8 */
+				10'b00_1110_1000: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG Call %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd1;
+				end
+
 				/* 0xF7 */
 				10'b00_1111_0111: begin
 `ifdef ALU_DEBUG
@@ -139,6 +163,14 @@ module ALU (
 					$display("[ALU] DBG AND %x & %x = %x", oprd1, oprd2, oprd1 & oprd2);
 `endif
 					tmp_result = oprd1 & oprd2;
+				end
+
+				/* 0x81 101 */
+				10'b11_0000_0100: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG SUB %x - %x = %x", oprd1, oprd2, oprd1 - oprd2);
+`endif
+					tmp_result = oprd1 - oprd2;
 				end
 
 				/* 0xFF 010 */
