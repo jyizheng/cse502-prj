@@ -49,3 +49,5 @@
 `define GPR_T_8H	3'h5
 
 `endif
+
+/* vim: set ts=4 sw=0 tw=0 noet : */

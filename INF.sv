@@ -50,7 +50,10 @@ module INF(input clk,
 			decode_offset <= 0;
 			decode_buffer <= 0;
 			if (fetch_state != fetch_idle) begin
-				fetch_state <= fetch_rst_waiting;
+				if (ic_done)
+					fetch_state <= fetch_idle;
+				else
+					fetch_state <= fetch_rst_waiting;
 			end
 		end else begin
 			if (fetch_state == fetch_rst_waiting) begin
