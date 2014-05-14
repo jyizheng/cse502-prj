@@ -24,6 +24,21 @@ module ALU (
 	logic[127:0] tmp_result;
 	logic[63:0] tmp_rflags;
 
+	function logic rf_pf_cal();
+		rf_pf_cal = !(tmp_result[0] ^ tmp_result[1]
+			^ tmp_result[2] ^ tmp_result[3]
+			^ tmp_result[4] ^ tmp_result[5]
+			^ tmp_result[6] ^ tmp_result[7]);
+	endfunction
+
+	function logic rf_of_cal_add();
+		rf_of_cal_add =	(oprd1[63] ^ oprd2[63]) ? 1'b0 : (tmp_result[63] ^ oprd1[63]);
+	endfunction
+
+	function logic rf_of_cal_sub();
+		rf_of_cal_sub =	(oprd1[63] ^ oprd2[63]) ? (tmp_result[63] ^ oprd1[63]) : 1'b0;
+	endfunction
+
 	always_comb begin
 		if (enable) begin
 			casez (opcode)
@@ -36,9 +51,10 @@ module ALU (
 
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_add();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x08 ~ 0x0F */
@@ -52,10 +68,11 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
-				/* 0x20 ~ 0x2D */
+				/* 0x20 ~ 0x27 */
 				10'b00_0010_0???: begin
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG AND %x | %x = %x", oprd1, oprd2, oprd1 & oprd2);
@@ -66,7 +83,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x28 ~ 0x2D */
@@ -74,13 +92,14 @@ module ALU (
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG SUB %x - %x = %x", oprd1, oprd2, oprd1 - oprd2);
 `endif
-					tmp_result = oprd1 | oprd2;
+					tmp_result = oprd1 - oprd2;
 
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_sub();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x31 ~ 0x35 */
@@ -94,7 +113,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x38 ~ 0x3D */
@@ -106,9 +126,10 @@ module ALU (
 
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_sub();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 
 					tmp_result = oprd1;
 				end
@@ -160,7 +181,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 
 					tmp_result = oprd1;
 				end
@@ -245,8 +267,9 @@ module ALU (
 `endif
 					tmp_result = oprd1 * oprd2;
 					tmp_rflags = rflags;
-					tmp_rflags[`RF_OF] = (tmp_result[127:64] == 0) ? 0 : 1;
-					tmp_rflags[`RF_CF] = (tmp_result[127:64] == 0) ? 0 : 1;
+					tmp_rflags[`RF_OF] = |tmp_result[127:64];
+					tmp_rflags[`RF_CF] = |tmp_result[127:64];
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x105 */
@@ -267,6 +290,15 @@ module ALU (
 					tmp_rflags = rflags;
 				end
 
+				/* 0x180 ~ 0x18F */
+				10'b01_1010_1110: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG CLFLUSH %x %x", oprd1, oprd2);
+`endif
+					tmp_result = oprd2;
+					tmp_rflags = rflags;
+				end
+
 				/* Extensions */
 				/* 0x83 000 */
 				10'b11_0000_0011: begin
@@ -277,9 +309,10 @@ module ALU (
 
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_add();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x83 001 */
@@ -293,7 +326,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x83 100 */
@@ -307,7 +341,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = 0;
 					tmp_rflags[`RF_OF] = 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x81 101 */
@@ -318,9 +353,10 @@ module ALU (
 					tmp_result = oprd1 - oprd2;
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_sub();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 				end
 
 				/* 0x83 111 */
@@ -332,9 +368,10 @@ module ALU (
 
 					tmp_rflags = rflags;
 					tmp_rflags[`RF_CF] = tmp_result[64];
-					tmp_rflags[`RF_OF] = tmp_result[64] ^ tmp_result[63];
+					tmp_rflags[`RF_OF] = rf_of_cal_sub();
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 
 					tmp_result = oprd1;
 				end
@@ -350,7 +387,8 @@ module ALU (
 					tmp_rflags[`RF_CF] = tmp_result[64];
 					tmp_rflags[`RF_OF] = (oprd2 == 1) ? tmp_result[64] ^ tmp_result[63] : 0;
 					tmp_rflags[`RF_SF] = tmp_result[63];
-					tmp_rflags[`RF_ZF] = (tmp_result == 0) ? 1 : 0;
+					tmp_rflags[`RF_ZF] = !(|tmp_result[63:0]);
+					tmp_rflags[`RF_PF] = rf_pf_cal();
 `ifdef ALU_DEBUG
 					$display("[ALU] DBG SHL %x - %x = %x", oprd1, oprd2, tmp_result);
 `endif
@@ -382,28 +420,44 @@ module ALU (
 			/* Keep the previous value */
 		end else begin
 			exe_mem <= 0;
-			result <= 0;
-			rflags <= 0;
+			//result <= 0;
+			//rflags <= 0;
 		end
 	end
 
 	function logic condition_true(logic[7:0] cond);
 		case (cond)
+			/* O */
 			8'h00: return rflags[`RF_OF];
+			/* NO */
 			8'h01: return !rflags[`RF_OF];
+			/* B/NAE/C */
 			8'h02: return rflags[`RF_CF];
+			/* NB/AE/NC */
 			8'h03: return !rflags[`RF_CF];
+			/* Z/E */
 			8'h04: return rflags[`RF_ZF];
+			/* NZ/NE */
 			8'h05: return !rflags[`RF_ZF];
+			/* BE/NA */
 			8'h06: return (rflags[`RF_ZF] | rflags[`RF_CF]);
+			/* NBE/A */
 			8'h07: return !(rflags[`RF_ZF] | rflags[`RF_CF]);
+			/* S */
 			8'h08: return rflags[`RF_SF];
+			/* NS */
 			8'h09: return !rflags[`RF_SF];
+			/* P/PE */
 			8'h0A: return rflags[`RF_PF];
+			/* NP/PO */
 			8'h0B: return !rflags[`RF_PF];
+			/* L/NGE */
 			8'h0C: return (rflags[`RF_SF] != rflags[`RF_OF]);
+			/* NL/GE */
 			8'h0D: return (rflags[`RF_SF] == rflags[`RF_OF]);
+			/* LE/NG */
 			8'h0E: return (rflags[`RF_ZF] | (rflags[`RF_SF] != rflags[`RF_OF]));
+			/* NLE/G */
 			8'h0F: return !(rflags[`RF_ZF] | (rflags[`RF_SF] != rflags[`RF_OF]));
 			default: $display("[ALU] ERR unknown condition [%x]", cond);
 		endcase
