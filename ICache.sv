@@ -49,7 +49,8 @@ module ICache(input clk,
 	logic[0:0] cl_way_rp_sel; /* replacement selector */
 
 	logic[63:0] cl_acc_tmp;
-	logic[63:0] cl_acc_neg_tmp;
+
+	logic[63:0] cl_acc_neg_tmp[1:0]; /* Used for update Timing info */
 
 	SRAM #(	.width(ClWidth),
 			.logDepth(IndexWidth),
@@ -94,9 +95,11 @@ module ICache(input clk,
 				cl_acc_tmp[`CL_ACC_V] = 1;
 				cl_acc_tmp[`CL_ACC_T] = 1;
 
-				cl_acc_neg_tmp[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
-				cl_acc_neg_tmp[`CL_ACC_V] = 1;
-				cl_acc_neg_tmp[`CL_ACC_T] = 1;
+				cl_acc_neg_tmp[0] = cl_racc[0];
+				cl_acc_neg_tmp[0][`CL_ACC_T] = 0;
+
+				cl_acc_neg_tmp[1] = cl_racc[1];
+				cl_acc_neg_tmp[1][`CL_ACC_T] = 0;
 			end
 		end
 	end
@@ -122,10 +125,30 @@ module ICache(input clk,
 					ic_state <= state_idle;
 					rdata <= cl_rdata[0];
 					done <= 1;
+
+					/* Update our timing info */
+					cl_wacc[0] <= cl_acc_tmp[0];
+					cl_wacc_en[0] <= 1;
+
+					/* set the other ways' timing info */
+					if (cl_racc[1][`CL_ACC_V]) begin
+						cl_wacc[1] <= cl_acc_neg_tmp[1];
+						cl_wacc_en[1] <= 1;
+					end
 				end else if (cl_hit[1]) begin
 					ic_state <= state_idle;
 					rdata <= cl_rdata[1];
 					done <= 1;
+
+					/* Update our timing info */
+					cl_wacc[1] <= cl_acc_tmp[1];
+					cl_wacc_en[1] <= 1;
+
+					/* set the other ways' timing info */
+					if (cl_racc[0][`CL_ACC_V]) begin
+						cl_wacc[0] <= cl_acc_neg_tmp[0];
+						cl_wacc_en[0] <= 1;
+					end
 				end else begin
 					/* Cache miss */
 					ic_state <= state_m_wait;
