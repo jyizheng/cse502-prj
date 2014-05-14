@@ -137,9 +137,9 @@ module Core (
 	logic mem_blocked;
 
 	/* check register conflict */
-	function logic df_reg_conflict(micro_op_t uop);
+	function logic df_reg_conflict(/* verilator lint_off UNUSED */ micro_op_t uop /* verilator lint_off UNUSED */);
 		if (uop.oprd1.t == `OPRD_T_RDAX) begin
-			if (reg_occupies[`GPR_RAX] || reg_occupies[`GPR_RDX])
+			if (reg_occupies[{1'b0,`GPR_RAX}] || reg_occupies[{1'b0,`GPR_RDX}])
 				return 1;
 		end
 
@@ -242,7 +242,7 @@ module Core (
 	micro_op_t exe_uop;
 
 	logic exe_branch;
-	logic exe_rip;
+	logic[63:0] exe_rip;
 
 	ALU alu(clk, df_exe,
 		df_uop.opcode, df_uop.oprd1.value, df_uop.oprd2.value, df_uop.oprd3.value, df_uop.next_rip,
@@ -286,9 +286,9 @@ module Core (
 
 	/* --------------------------------------------------------- */
 	/* WB stage */
-	logic[63:0] wb_result;
-	logic[63:0] wb_rflags;
-	logic[4:0] reg_num;
+	//logic[63:0] wb_result;
+	//logic[63:0] wb_rflags;
+	//logic[4:0] reg_num;
 	logic wb_branch;
 	logic[63:0] wb_rip;
 
@@ -300,29 +300,29 @@ module Core (
 				regs[`GPR_RAX] <= syscall_cse502(regs[`GPR_RAX], regs[`GPR_RDI],
 					regs[`GPR_RSI], regs[`GPR_RDX], regs[`GPR_R10],
 					regs[`GPR_R8], regs[`GPR_R9]);
-				reg_occupies[mem_uop.oprd1.r] <= 0;
+				reg_occupies[{1'b0,mem_uop.oprd1.r}] <= 0;
 				rflags <= mem_rflags;
 			end else if (mem_uop.oprd1.t == `OPRD_T_REG) begin
 				/* Write-back & Clear target reg occupation */
-				regs[mem_uop.oprd1.r] <= mem_result[63:0];
-				reg_occupies[mem_uop.oprd1.r] <= 0;
-				reg_num <= mem_uop.oprd1.r;
+				regs[{1'b0,mem_uop.oprd1.r}] <= mem_result[63:0];
+				reg_occupies[{1'b0,mem_uop.oprd1.r}] <= 0;
+				//reg_num <= mem_uop.oprd1.r;
 				rflags <= mem_rflags;
 			end else if (mem_uop.oprd1.t == `OPRD_T_STACK) begin
-				regs[mem_uop.oprd1.r] <= regs[mem_uop.oprd1.r] - 8;
+				regs[{1'b0,mem_uop.oprd1.r}] <= regs[{1'b0,mem_uop.oprd1.r}] - 8;
 				reg_occupies[mem_uop.oprd1.r] <= 0;
 				rflags <= mem_rflags;
 			end else if (mem_uop.oprd1.t == `OPRD_T_RDAX) begin
-				regs[`GPR_RAX] <= mem_result[63:0];
-				regs[`GPR_RDX] <= mem_result[127:64];
-				reg_occupies[`GPR_RAX] <= 0;
-				reg_occupies[`GPR_RDX] <= 0;
+				regs[{1'b0,`GPR_RAX}] <= mem_result[63:0];
+				regs[{1'b0,`GPR_RDX}] <= mem_result[127:64];
+				reg_occupies[{1'b0,`GPR_RAX}] <= 0;
+				reg_occupies[{1'b0,`GPR_RDX}] <= 0;
 				rflags <= mem_rflags;
 			end
 
 			if (mem_uop.oprd2.t == `OPRD_T_STACK) begin
-				regs[mem_uop.oprd2.r] <= regs[mem_uop.oprd2.r] + 8;
-				reg_occupies[mem_uop.oprd2.r] <= 0;
+				regs[{1'b0,mem_uop.oprd2.r}] <= regs[{1'b0,mem_uop.oprd2.r}] + 8;
+				reg_occupies[{1'b0,mem_uop.oprd2.r}] <= 0;
 			end
 
 			/* Deal with call/ret */
@@ -385,22 +385,22 @@ module Core (
 	//cse502 : Use the following as a guide to print the Register File contents.
 	final begin
 		$display("RFLAGS = %x", rflags);
-		$display("RAX = %x", regs[`GPR_RAX]);
-		$display("RBX = %x", regs[`GPR_RBX]);
-		$display("RCX = %x", regs[`GPR_RCX]);
-		$display("RDX = %x", regs[`GPR_RDX]);
-		$display("RSI = %x", regs[`GPR_RSI]);
-		$display("RDI = %x", regs[`GPR_RDI]);
-		$display("RBP = %x", regs[`GPR_RBP]);
-		$display("RSP = %x", regs[`GPR_RSP]);
-		$display("R8  = %x", regs[`GPR_R8]);
-		$display("R9  = %x", regs[`GPR_R9]);
-		$display("R10 = %x", regs[`GPR_R10]);
-		$display("R11 = %x", regs[`GPR_R11]);
-		$display("R12 = %x", regs[`GPR_R12]);
-		$display("R13 = %x", regs[`GPR_R13]);
-		$display("R14 = %x", regs[`GPR_R14]);
-		$display("R15 = %x", regs[`GPR_R15]);
+		$display("RAX = %x", regs[{1'b0,`GPR_RAX}]);
+		$display("RBX = %x", regs[{1'b0,`GPR_RBX}]);
+		$display("RCX = %x", regs[{1'b0,`GPR_RCX}]);
+		$display("RDX = %x", regs[{1'b0,`GPR_RDX}]);
+		$display("RSI = %x", regs[{1'b0,`GPR_RSI}]);
+		$display("RDI = %x", regs[{1'b0,`GPR_RDI}]);
+		$display("RBP = %x", regs[{1'b0,`GPR_RBP}]);
+		$display("RSP = %x", regs[{1'b0,`GPR_RSP}]);
+		$display("R8  = %x", regs[{1'b0,`GPR_R8}]);
+		$display("R9  = %x", regs[{1'b0,`GPR_R9}]);
+		$display("R10 = %x", regs[{1'b0,`GPR_R10}]);
+		$display("R11 = %x", regs[{1'b0,`GPR_R11}]);
+		$display("R12 = %x", regs[{1'b0,`GPR_R12}]);
+		$display("R13 = %x", regs[{1'b0,`GPR_R13}]);
+		$display("R14 = %x", regs[{1'b0,`GPR_R14}]);
+		$display("R15 = %x", regs[{1'b0,`GPR_R15}]);
 	end
 endmodule
 
