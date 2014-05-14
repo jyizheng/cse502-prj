@@ -14,13 +14,14 @@ module Mem (input clk,
 
 	output dcache_en,
 	output dcache_wren,
+	output dcache_flush,
 	output[63:0] dcache_addr,
 	input[63:0] dcache_rdata,
 	output[63:0] dcache_wdata,
 	input dcache_done
 );
 
-	enum { op_none, op_read, op_write } mem_op;
+	enum { op_none, op_read, op_write, op_flush } mem_op;
 	enum { mem_idle, mem_waiting, mem_active } mem_state;
 
 	logic[63:0] rip;
@@ -57,6 +58,14 @@ module Mem (input clk,
 					dcache_addr <= addr;
 					dcache_wdata <= value;
 					mem_wb <= 0;
+				end else if (mem_op == op_flush) begin
+//`ifdef MEM_DEBUG
+					$display("[MEM] flushing %x", addr);
+//`endif
+					dcache_en <= 1;
+					dcache_flush <= 1;
+					dcache_addr <= addr;
+					mem_wb <= 0;
 				end else begin
 					/* No need to do memory ops */
 					mem_result <= tmp_mem_result;
@@ -91,8 +100,9 @@ module Mem (input clk,
 				mem_blocked = 0;
 			end else if (uop.opcode == 10'h1ae) begin
 				/* CLFLUSH */
-				mem_op = op_none;
-				mem_blocked = 0;
+				mem_op = op_flush;
+				addr = uop.oprd2.ext + uop.oprd2.value;
+				mem_blocked = 1;
 			end else if (uop.oprd1.t == `OPRD_T_MEM) begin
 				/* XXX: block previous stages */
 				mem_blocked = 1;

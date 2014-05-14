@@ -53,6 +53,7 @@ module Core (
 	logic idone;
 	logic drequest;
 	logic dreqack;
+	logic dclflush;
 	logic dwrenable;
 	logic[63:0] daddr;
 	logic[64*8-1:0] drdata;
@@ -77,7 +78,7 @@ module Core (
 	logic[63:0] dcache_wdata;
 	logic dcache_done;
 	DCache dcache(clk,
-		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done,
+		dcache_enable, dcache_wenable, dclflush, dcache_addr, dcache_rdata, dcache_wdata, dcache_done,
 		drequest, dreqack, dwrenable, daddr, drdata, dwdata, ddone);
 
 	/* --------------------------------------------------------- */
@@ -269,7 +270,7 @@ module Core (
 
 	Mem mem(clk, exe_mem, mem_blocked, mem_wb,
 		exe_uop, exe_result, mem_result,
-		dcache_enable, dcache_wenable, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
+		dcache_enable, dcache_wenable, dclflush, dcache_addr, dcache_rdata, dcache_wdata, dcache_done);
 
 	always_ff @ (posedge bus.clk) begin
 		if (exe_mem && !mem_blocked) begin
