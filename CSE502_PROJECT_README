@@ -1,0 +1,25 @@
+Group members:
+	(109398890) Tao Zhang
+	(109242262) Zhixin Shu
+
+Project introduction:
+* 6-stage pipeline, including Instruction-Fetch, Decoder, Scheduler, ALU,
+  Memory, Write-back
+
+* Cache:
+    * 2-Way set-associative write-back cache
+    * Separated Instruction Cache and Data Cache
+    * 128KiB totally, 64KiB I-Cache, 64KiB D-Cache, 32KiB for each way
+    * Support CLFLUSH operation
+
+* Support micro-operations, which can split memory-related operations in
+  original x86-64 ISA into two or three uops, thus split load/store operations
+  and other specific functional operations apart, and simplifies the design of pipeline.
+
+* Tested against prog1, prog2, prog3, prog4, prog5
+
+* Cycles for prog2 (input, cycle count)
+    * 2, 29958
+    * 4, 58287
+    * 6, 87495
+    * 10, 180832
