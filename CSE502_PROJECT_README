@@ -7,10 +7,10 @@ Project introduction:
   Memory, Write-back
 
 * Cache:
-    * 2-Way set-associative write-back cache
-    * Separated Instruction Cache and Data Cache
-    * 128KiB totally, 64KiB I-Cache, 64KiB D-Cache, 32KiB for each way
-    * Support CLFLUSH operation
+  * 2-Way set-associative write-back cache
+  * Separated Instruction Cache and Data Cache
+  * 128KiB totally, 64KiB I-Cache, 64KiB D-Cache, 32KiB for each way
+  * Support CLFLUSH operation
 
 * Support micro-operations, which can split memory-related operations in
   original x86-64 ISA into two or three uops, thus split load/store operations
@@ -19,7 +19,16 @@ Project introduction:
 * Tested against prog1, prog2, prog3, prog4, prog5
 
 * Cycles for prog2 (input, cycle count)
-    * 2, 29958
-    * 4, 58287
-    * 6, 87495
-    * 10, 180832
+  * 2, 29958
+  * 4, 58287
+  * 6, 87495
+  * 10, 180832
+  * 20, 567397
+
+* Project files:
+  * Core.sv : main module, connecting each sub-modules together
+  * INF.sv : Instruction-fetch module
+  * Decoder.sv : Instruction decoder module
+  * ALU.sv : ALU module
+  * Mem.sv : Memory module
+  * DCache/ICache : Data/Instruction cache modules
