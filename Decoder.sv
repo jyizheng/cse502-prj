@@ -1485,11 +1485,20 @@ module Decoder (
 			3'b001: begin
 				opcode_tr = 10'b11_0000_0001;
 			end
+			3'b010: begin
+				opcode_tr = 10'b11_0000_1000;
+			end
+			3'b011: begin
+				opcode_tr = 10'b11_0000_1001;
+			end
 			3'b100: begin
 				opcode_tr = 10'b11_0000_0010;
 			end
 			3'b101: begin
 				opcode_tr = 10'b11_0000_0100;
+			end
+			3'b110: begin
+				opcode_tr = 10'b11_0000_1010;
 			end
 			3'b111: begin
 				opcode_tr = 10'b11_0000_0110;
