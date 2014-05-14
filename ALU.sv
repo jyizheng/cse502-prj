@@ -299,6 +299,18 @@ module ALU (
 					tmp_rflags = rflags;
 				end
 
+				/* 0x1AF */
+				10'b01_1010_1111: begin
+`ifdef ALU_DEBUG
+					$display("[ALU] DBG IMUL %x * %x = %x", oprd1, oprd2, oprd1 * oprd2);
+`endif
+					tmp_result = oprd1 * oprd2;
+					tmp_rflags = rflags;
+					tmp_rflags[`RF_OF] = |tmp_result[127:64];
+					tmp_rflags[`RF_CF] = |tmp_result[127:64];
+					tmp_rflags[`RF_PF] = rf_pf_cal();
+				end
+
 				/* Extensions */
 				/* 0x83 000 */
 				10'b11_0000_0011: begin
