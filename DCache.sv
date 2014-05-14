@@ -85,8 +85,8 @@ module DCache(input clk,
 
 	logic[63:0] addr_buf;
 	logic[63:0] wdata_buf;
-	logic[64*8-1:0] dc_buf;
-	logic[7:0] buf_idx;
+	//logic[64*8-1:0] dc_buf;
+	//logic[7:0] buf_idx;
 
 	always_comb begin
 		if (dc_state == state_idle && enable) begin
@@ -119,6 +119,7 @@ module DCache(input clk,
 				end
 
 				/* For read operation */
+				cl_acc_r_tmp_new = 0;
 				cl_acc_r_tmp_new[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
 				cl_acc_r_tmp_new[`CL_ACC_V] = 1;
 				cl_acc_r_tmp_new[`CL_ACC_T] = 1;
@@ -130,6 +131,7 @@ module DCache(input clk,
 				cl_acc_r_tmp_update[1][`CL_ACC_T] = 1;
 
 				/* For write operation */
+				cl_acc_w_tmp_new = 0;
 				cl_acc_w_tmp_new[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
 				cl_acc_w_tmp_new[`CL_ACC_V] = 1;
 				cl_acc_w_tmp_new[`CL_ACC_T] = 1;

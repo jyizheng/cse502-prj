@@ -6,8 +6,9 @@ module Mem (input clk,
 	input enable,
 	output mem_blocked,
 	output mem_wb,
-
+ /* verilator lint_off UNUSED */
 	input micro_op_t uop,
+ /* verilator lint_on UNUSED */
 	input[127:0] alu_result,
 
 	output[127:0] mem_result,
@@ -24,8 +25,8 @@ module Mem (input clk,
 	enum { op_none, op_read, op_write, op_flush } mem_op;
 	enum { mem_idle, mem_waiting, mem_active } mem_state;
 
-	logic[63:0] rip;
-	assign rip = uop.next_rip;
+	//logic[63:0] rip;
+	//assign rip = uop.next_rip;
 
 	logic[127:0] tmp_mem_result;
 

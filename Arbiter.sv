@@ -11,7 +11,7 @@ typedef struct packed {
 `define TAG_PRIV_D 8'b00000010
 `define TAG_PRIV_I 8'b00000100
 
-module Arbiter(Sysbus bus,
+module Arbiter( /* verilator lint_off UNDRIVEN */ /* verilator lint_off UNUSED */ Sysbus bus,  /* verilator lint_on UNUSED */ /* verilator lint_on UNDRIVEN */
 
 	/* For instruction cache */
 	input irequest,

@@ -12,7 +12,6 @@ module Decoder (
 	input clk,
 	input can_decode,
 	input dc_resume,
-	output dc_if,
 	input[63:0] rip,
 	input[0:15*8-1] decode_bytes,
 	input taken,	// If pipeline has taken the sent instruction
@@ -21,6 +20,7 @@ module Decoder (
 	output dc_df
 );
 
+	/* verilator lint_off WIDTH */
 	enum { dc_norm, dc_stall } dc_state;
 
 	initial begin
@@ -1212,6 +1212,7 @@ module Decoder (
 	/* verilator lint_on UNUSED */
 `endif /* DECODER_OUTPUT */
 
+/* verilator lint_off UNUSED */
 	/* For displacement, we don't extend to effective operand size */
 	function logic[63:0] decode_disp();
 		logic[7:0] disp_size = disp.size * 8;
@@ -1401,7 +1402,7 @@ module Decoder (
 		dc_oprd[oprd_no].r = {1'b0, `GPR_RAX};
 		decode_operand_rAX = 0;
 	endfunction
-
+/* verilator lint_on UNUSED */
 	function logic split_uop();
 		assert(!(dc_oprd[0].t == `OPRD_T_MEM && dc_oprd[1].t == `OPRD_T_MEM)) else $fatal;
 		if (opcode == 10'h1ae || opcode == 10'h08d) begin
@@ -1545,7 +1546,7 @@ module Decoder (
 	function logic decode_one();
 		oprd_desc_t oprd_dsc1;
 		oprd_desc_t oprd_dsc2;
-		oprd_desc_t oprd_dsc3;
+		//oprd_desc_t oprd_dsc3;
 
 `ifdef DECODER_DEBUG
 		if (effect_oprd_size != 64)

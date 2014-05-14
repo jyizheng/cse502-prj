@@ -10,7 +10,9 @@ module ALU (
 	input opcode_t opcode,
 	input[63:0] oprd1,
 	input[63:0] oprd2,
+/* verilator lint_off UNUSED */
 	input[63:0] oprd3,
+ /* verilator lint_on UNUSED */
 	input[63:0] next_rip,
 	output[127:0] result,
 	output[63:0] rflags,
@@ -24,6 +26,7 @@ module ALU (
 	logic[127:0] tmp_result;
 	logic[63:0] tmp_rflags;
 
+	/* verilator lint_off WIDTH */
 	function logic rf_pf_cal();
 		rf_pf_cal = !(tmp_result[0] ^ tmp_result[1]
 			^ tmp_result[2] ^ tmp_result[3]
@@ -531,7 +534,6 @@ module ALU (
 			branch_rip <= 0;
 		end
 	end
-
 
 endmodule
 

@@ -12,9 +12,10 @@ module INF(input clk,
 	output[63:0] decode_rip,
 	input[7:0] bytes_decoded,
 
-	output if_dc,
-	input dc_if
+	output if_dc
 );
+
+	/* verilator lint_off WIDTH */
 
 	logic initialized;
 
@@ -62,7 +63,7 @@ module INF(input clk,
 			end else if (fetch_state == fetch_waiting) begin
 				ic_enable <= 0;
 				if (ic_done == 1) begin
-					for (int i = fetch_skip; i < 64; i += 1) begin
+					for (int i = {26'h0,fetch_skip}; i < 64; i += 1) begin
 						decode_buffer[(fetch_offset+i-fetch_skip)*8+:8] <= idata[i*8+:8];
 					end
 					fetch_offset <= fetch_offset + (64 - fetch_skip);
@@ -77,8 +78,8 @@ module INF(input clk,
 				fetch_state <= fetch_waiting;
 			end
 
-			decode_offset <= decode_offset + { bytes_decoded };
-			decode_rip <= decode_rip + bytes_decoded;
+			decode_offset <= decode_offset + { bytes_decoded[6:0] };
+			decode_rip <= decode_rip + {56'h0,bytes_decoded};
 		end
 	end
 
