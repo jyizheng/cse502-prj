@@ -197,7 +197,7 @@ module DCache(input clk,
 						drequest <= 1;
 						dwrenable <= 1;
 						dwdata <= cl_rdata[cl_way_rp_sel];
-						daddr <= {cl_racc[`CL_ACC_T_MSB:`CL_ACC_T_LSB], cl_index, 6'b000000};
+						daddr <= {cl_racc[cl_way_rp_sel][`CL_ACC_T_MSB:`CL_ACC_T_LSB], cl_index, 6'b000000};
 					end else begin
 						dc_state <= state_r_m_wait;
 						drequest <= 1;
@@ -349,7 +349,7 @@ module DCache(input clk,
 				cl_wacc_en[cl_way_rp_sel] <= 1;
 
 				/* Write data into it */
-				cl_wdata[cl_offset*8+:64] <= wdata_buf;
+				cl_wdata[cl_way_rp_sel][cl_offset*8+:64] <= wdata_buf;
 			end
 
 		end else if (dc_state == state_wb_m_wait) begin
@@ -370,77 +370,6 @@ module DCache(input clk,
 					cl_wacc_en[1] <= 1;
 				end
 			end
-		end
-	end
-
-	always_ff @ (posedge clk) begin
-		if (state == state_idle) begin
-			if (enable) begin
-				assert(addr[5:0] == 0) else $fatal("[DCACHE] unaligned mem addr ");
-				/* First we all need to read data */
-				if (wen)
-					state <= state_w_r_wait;
-				else
-					state <= state_r_wait;
-				drequest <= 1;
-				dwrenable <= 0;
-				daddr <= { addr[63:6], 6'b000000 };
-				dwdata <= 0;
-			end else begin
-				rdata <= 0;
-				done <= 0;
-
-				drequest <= 0;
-				dwrenable <= 0;
-				daddr <= 0;
-				dwdata <= 0;
-			end
-		end else if (state == state_r_wait) begin
-			if (dreqack) begin
-				drequest <= 0;
-				dwrenable <= 0;
-			end
-			if (ddone) begin
-				state <= state_idle;
-				rdata <= drdata[{3'b000,addr[5:0]}*8+:64];
-				done <= 1;
-			end
-		end else if (state == state_w_r_wait) begin
-			if (dreqack) begin
-				drequest <= 0;
-				dwrenable <= 0;
-			end
-
-			if (ddone) begin
-				state <= state_w_wait;
-				drequest <= 1;
-				dwrenable <= 1;
-				daddr <= { addr[63:6], 6'b000000 };
-				dwdata <= dc_buf;
-				done <= 0;
-			end
-
-		end else if (state == state_w_wait) begin
-			if (dreqack) begin
-				drequest <= 0;
-				dwrenable <= 0;
-			end
-
-			if (ddone) begin
-				state <= state_idle;
-				daddr <= 0;
-				dwdata <= 0;
-				rdata <= 0;
-				done <= 1;
-			end
-		end
-	end
-
-	always_comb begin
-		if ((state == state_w_r_wait) && ddone) begin
-			logic[8:0] offset = { 3'b000, addr[5:0] };
-			dc_buf = drdata;
-			dc_buf[offset*8+:64] = wdata;
 		end
 	end
 
