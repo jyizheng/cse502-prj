@@ -202,7 +202,7 @@ module DCache(input clk,
 						dc_state <= state_r_m_wait;
 						drequest <= 1;
 						dwrenable <= 0;
-						daddr <= {addr_buf[63:0], 6'b000000};
+						daddr <= {addr_buf[63:6], 6'b000000};
 					end
 				end
 			end else begin
@@ -255,7 +255,7 @@ module DCache(input clk,
 						dc_state <= state_w_m_wait;
 						drequest <= 1;
 						dwrenable <= 0;
-						daddr <= {addr_buf[63:0], 6'b000000};
+						daddr <= {addr_buf[63:6], 6'b000000};
 					end
 				end
 			end else begin
@@ -297,7 +297,7 @@ module DCache(input clk,
 
 			if (ddone) begin
 				dc_state <= state_r_m_wait;
-				daddr <= {addr_buf[63:0], 6'b000000};
+				daddr <= {addr_buf[63:6], 6'b000000};
 				drequest <= 1;
 				dwrenable <= 0;
 			end
@@ -309,7 +309,7 @@ module DCache(input clk,
 
 			if (ddone) begin
 				dc_state <= state_w_m_wait;
-				daddr <= {addr_buf[63:0], 6'b000000};
+				daddr <= {addr_buf[63:6], 6'b000000};
 				drequest <= 1;
 				dwrenable <= 0;
 			end
