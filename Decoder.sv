@@ -2,7 +2,7 @@
 `include "micro_op.svh"
 `include "gpr.svh"
 
-//`define DECODER_OUTPUT 1
+`define DECODER_OUTPUT 1
 //`define DECODER_DEBUG 1
 
 `define DC_BUF_SZ	16

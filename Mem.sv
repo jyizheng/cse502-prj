@@ -1,6 +1,6 @@
 `include "micro_op.svh"
 
-//`define MEM_DEBUG 1
+`define MEM_DEBUG 1
 
 module Mem (input clk,
 	input enable,
@@ -37,6 +37,8 @@ module Mem (input clk,
 			dcache_en <= 0;
 		if (dcache_wren)
 			dcache_wren <= 0;
+		if (dcache_flush)
+			dcache_flush <= 0;
 		if (mem_state == mem_idle) begin
 			if (enable) begin
 				if (mem_op == op_read) begin
@@ -62,6 +64,7 @@ module Mem (input clk,
 //`ifdef MEM_DEBUG
 					$display("[MEM] flushing %x", addr);
 //`endif
+					mem_state <= mem_waiting;
 					dcache_en <= 1;
 					dcache_flush <= 1;
 					dcache_addr <= addr;

@@ -4,7 +4,7 @@
 `include "operand.svh"
 `include "micro_op.svh"
 
-//`define CORE_DEBUG 1
+`define CORE_DEBUG 1
 
 module Core (
 	input[63:0] entry

@@ -55,8 +55,10 @@ module DCache(input clk,
 
 	logic cl_need_wb;
 
-	logic[63:0] cl_acc_r_tmp;
-	logic[63:0] cl_acc_w_tmp;
+	logic[63:0] cl_acc_r_tmp_new;
+	logic[63:0] cl_acc_w_tmp_new;
+	logic[63:0] cl_acc_r_tmp_update[1:0];
+	logic[63:0] cl_acc_w_tmp_update[1:0];
 
 	logic[ClWidth/WordSize-1:0] cl_wdata_en_tmp;
 
@@ -110,24 +112,35 @@ module DCache(input clk,
 					cl_need_wb = cl_racc[1][`CL_ACC_D];
 				end else if (cl_racc[0][`CL_ACC_T] == 0) begin
 					cl_way_rp_sel = 0;
-					cl_need_wb = 1;
 					cl_need_wb = cl_racc[0][`CL_ACC_D];
 				end else begin
 					cl_way_rp_sel = 0;
-					cl_need_wb = 1;
 					cl_need_wb = cl_racc[0][`CL_ACC_D];
 				end
 
 				/* For read operation */
-				cl_acc_r_tmp[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
-				cl_acc_r_tmp[`CL_ACC_V] = 1;
-				cl_acc_r_tmp[`CL_ACC_T] = 1;
+				cl_acc_r_tmp_new[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
+				cl_acc_r_tmp_new[`CL_ACC_V] = 1;
+				cl_acc_r_tmp_new[`CL_ACC_T] = 1;
+				cl_acc_r_tmp_new[`CL_ACC_D] = 0;
+
+				cl_acc_r_tmp_update[0] = cl_racc[0];
+				cl_acc_r_tmp_update[0][`CL_ACC_T] = 1;
+				cl_acc_r_tmp_update[1] = cl_racc[1];
+				cl_acc_r_tmp_update[1][`CL_ACC_T] = 1;
 
 				/* For write operation */
-				cl_acc_w_tmp[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
-				cl_acc_w_tmp[`CL_ACC_V] = 1;
-				cl_acc_w_tmp[`CL_ACC_T] = 1;
-				cl_acc_w_tmp[`CL_ACC_D] = 1;
+				cl_acc_w_tmp_new[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
+				cl_acc_w_tmp_new[`CL_ACC_V] = 1;
+				cl_acc_w_tmp_new[`CL_ACC_T] = 1;
+				cl_acc_w_tmp_new[`CL_ACC_D] = 1;
+
+				cl_acc_w_tmp_update[0] = cl_racc[0];
+				cl_acc_w_tmp_update[0][`CL_ACC_T] = 1;
+				cl_acc_w_tmp_update[0][`CL_ACC_D] = 1;
+				cl_acc_w_tmp_update[1] = cl_racc[1];
+				cl_acc_w_tmp_update[1][`CL_ACC_T] = 1;
+				cl_acc_w_tmp_update[1][`CL_ACC_D] = 1;
 
 				cl_wdata_en_tmp = 0;
 				cl_wdata_en_tmp[cl_offset[5:3]] = 1;
@@ -168,7 +181,7 @@ module DCache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[0] <= cl_acc_r_tmp[0];
+					cl_wacc[0] <= cl_acc_r_tmp_update[0];
 					cl_wacc_en[0] <= 1;
 
 					/* set the other ways' timing info */
@@ -182,7 +195,7 @@ module DCache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[1] <= cl_acc_r_tmp[1];
+					cl_wacc[1] <= cl_acc_r_tmp_update[1];
 					cl_wacc_en[1] <= 1;
 
 					/* set the other ways' timing info */
@@ -220,7 +233,7 @@ module DCache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[0] <= cl_acc_w_tmp[0];
+					cl_wacc[0] <= cl_acc_w_tmp_update[0];
 					cl_wacc_en[0] <= 1;
 
 					/* set the other ways' timing info */
@@ -235,7 +248,7 @@ module DCache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[1] <= cl_acc_w_tmp[1];
+					cl_wacc[1] <= cl_acc_w_tmp_update[1];
 					cl_wacc_en[1] <= 1;
 
 					/* set the other ways' timing info */
@@ -328,7 +341,7 @@ module DCache(input clk,
 				/* Allocate cache line */
 				cl_wdata[cl_way_rp_sel] <= drdata;
 				cl_wdata_en[cl_way_rp_sel] <= `CL_WEN_ALL;
-				cl_wacc[cl_way_rp_sel] <= cl_acc_r_tmp;
+				cl_wacc[cl_way_rp_sel] <= cl_acc_r_tmp_new;
 				cl_wacc_en[cl_way_rp_sel] <= 1;
 			end
 		end else if (dc_state == state_w_m_wait) begin
@@ -345,7 +358,7 @@ module DCache(input clk,
 				/* Allocate cache line */
 				cl_wdata[cl_way_rp_sel] <= drdata;
 				cl_wdata_en[cl_way_rp_sel] <= `CL_WEN_ALL;
-				cl_wacc[cl_way_rp_sel] <= cl_acc_w_tmp;
+				cl_wacc[cl_way_rp_sel] <= cl_acc_w_tmp_new;
 				cl_wacc_en[cl_way_rp_sel] <= 1;
 
 				/* Write data into it */
