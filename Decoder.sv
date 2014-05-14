@@ -2,8 +2,8 @@
 `include "micro_op.svh"
 `include "gpr.svh"
 
-`define DECODER_OUTPUT 1
-`define DECODER_DEBUG 1
+//`define DECODER_OUTPUT 1
+//`define DECODER_DEBUG 1
 
 `define DC_BUF_SZ	16
 `define DC_MAX_INSTR	4	// maximum number of instructions per cycle
@@ -1504,6 +1504,9 @@ module Decoder (
 		casez (modrm.v.reg_op)
 			3'b100: begin
 				opcode_tr = 10'b11_0000_0101;
+			end
+			3'b101: begin
+				opcode_tr = 10'b11_0000_0111;
 			end
 			default: $display("[DC] ERR unsupported reg_op [%x]", modrm.v.reg_op);
 		endcase

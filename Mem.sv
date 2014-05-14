@@ -1,6 +1,6 @@
 `include "micro_op.svh"
 
-`define MEM_DEBUG 1
+//`define MEM_DEBUG 1
 
 module Mem (input clk,
 	input enable,
