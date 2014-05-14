@@ -27,7 +27,9 @@ module ICache(input clk,
 
 	logic[IndexWidth-1:0] cl_index;
 	logic[TagWidth-1:0] cl_tag;
+/* verilator lint_off UNUSED */
 	logic[ClOffsetWidth-1:0] cl_offset;
+/* verilator lint_on UNUSED */
 
 	logic[ClWidth-1:0] cl_rdata[1:0];
 	logic[63:0] cl_racc[1:0];
@@ -91,6 +93,7 @@ module ICache(input clk,
 				else
 					cl_way_rp_sel = 0;
 
+				cl_acc_tmp = 0;
 				cl_acc_tmp[`CL_ACC_T_MSB:`CL_ACC_T_LSB] = cl_tag;
 				cl_acc_tmp[`CL_ACC_V] = 1;
 				cl_acc_tmp[`CL_ACC_T] = 1;
@@ -127,7 +130,7 @@ module ICache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[0] <= cl_acc_tmp[0];
+					cl_wacc[0] <= cl_acc_tmp;
 					cl_wacc_en[0] <= 1;
 
 					/* set the other ways' timing info */
@@ -141,7 +144,7 @@ module ICache(input clk,
 					done <= 1;
 
 					/* Update our timing info */
-					cl_wacc[1] <= cl_acc_tmp[1];
+					cl_wacc[1] <= cl_acc_tmp;
 					cl_wacc_en[1] <= 1;
 
 					/* set the other ways' timing info */
